@@ -20,17 +20,24 @@ jobs:
         run: |
           set +e  # jangan langsung mati kalau salah satu curl gagal
 
-          # >>> Ganti / tambah URL di sini <<<
-          URLS=(
-            "https://www.eporner.com/video-dlNO7AjhPZk/un-ebwh-356-fumika-kashiwagi/"
-          )
-
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           DELIM=$'\x1f'   # karakter pemisah field, hampir mustahil muncul di judul asli
 
+          if [ ! -f "urls.txt" ]; then
+            echo "File urls.txt tidak ditemukan di root repo!"
+            exit 1
+          fi
+
           echo "results<<EOF" >> "$GITHUB_OUTPUT"
 
-          for url in "${URLS[@]}"; do
+          while IFS= read -r url || [ -n "$url" ]; do
+            # skip baris kosong / komentar (diawali #)
+            url=$(echo "$url" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            [ -z "$url" ] && continue
+            case "$url" in
+              \#*) continue ;;
+            esac
+
             # --- 1. Cek status code ---
             http_code=$(curl -s -o /dev/null -w "%{http_code}" \
               --connect-timeout 10 \
@@ -57,7 +64,6 @@ jobs:
                 if [ -z "$raw_title" ]; then
                   title="(Tanpa Judul)"
                 else
-                  # escape karakter HTML biar tidak merusak tabel
                   title=$(echo "$raw_title" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
                 fi
               else
@@ -67,7 +73,7 @@ jobs:
 
             echo "${url}${DELIM}${title}${DELIM}${status}" >> "$GITHUB_OUTPUT"
             echo "Cek: $url -> [$title] -> $status"
-          done
+          done < urls.txt
 
           echo "EOF" >> "$GITHUB_OUTPUT"
 
@@ -127,9 +133,9 @@ jobs:
               color: #fff;
               white-space: nowrap;
             }
-            .ok { background: #2e7d32; }        /* hijau: 2xx */
-            .redirect { background: #f9a825; }   /* kuning: 3xx */
-            .fail { background: #c62828; }       /* merah: 4xx/5xx/error */
+            .ok { background: #2e7d32; }
+            .redirect { background: #f9a825; }
+            .fail { background: #c62828; }
             .no-result { text-align: center; color: #888; padding: 20px; }
           </style>
           </head>
