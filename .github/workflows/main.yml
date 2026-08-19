@@ -39,16 +39,28 @@ jobs:
             esac
 
             # --- 1. Cek status code ---
+            curl_err=$(mktemp)
             http_code=$(curl -s -o /dev/null -w "%{http_code}" \
               --connect-timeout 10 \
               --max-time 20 \
               -L -A "$UA" \
-              "$url")
+              "$url" 2> "$curl_err")
             exit_code=$?
 
             if [ $exit_code -ne 0 ] || [ -z "$http_code" ] || [ "$http_code" = "000" ]; then
               status="ERROR/TIMEOUT"
               title="-"
+              echo "  -> Detail error untuk $url (curl exit code $exit_code):"
+              cat "$curl_err"
+              case $exit_code in
+                6)  echo "  -> Kemungkinan: DNS tidak bisa di-resolve" ;;
+                7)  echo "  -> Kemungkinan: Koneksi ditolak server / diblokir firewall" ;;
+                28) echo "  -> Kemungkinan: Benar-benar timeout (server lambat merespons)" ;;
+                35) echo "  -> Kemungkinan: SSL/TLS handshake gagal (bisa jadi diblokir di level TLS)" ;;
+                52) echo "  -> Kemungkinan: Server tutup koneksi tanpa respons (sering tanda IP diblokir)" ;;
+                56) echo "  -> Kemungkinan: Gagal menerima data dari server (koneksi direset)" ;;
+                *)  echo "  -> Cek dokumentasi curl exit code untuk kode $exit_code" ;;
+              esac
             else
               status="$http_code"
 
@@ -70,6 +82,7 @@ jobs:
                 title="-"
               fi
             fi
+            rm -f "$curl_err"
 
             echo "${url}${DELIM}${title}${DELIM}${status}" >> "$GITHUB_OUTPUT"
             echo "Cek: $url -> [$title] -> $status"
