@@ -1,0 +1,7 @@
+# Format tiap baris (pisahkan pakai tanda | ):
+# URL_VIDEO | JUDUL | URL_COVER
+#
+# Baris kosong dan baris yang diawali # akan diabaikan.
+# URL_COVER boleh dikosongkan (biarkan di antara | | ) kalau belum ada gambar.
+
+https://vkvideo.ru/video672078245_456239157 | [UN] MIDA-742 - Himari | https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00742pl.w800.png
