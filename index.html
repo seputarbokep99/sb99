@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>URL Status Checker</title>
+<style>
+  body {
+    font-family: -apple-system, Arial, sans-serif;
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 20px;
+    background: #f5f5f5;
+    color: #222;
+  }
+  h1 { font-size: 22px; }
+  .updated { color: #666; font-size: 13px; margin-bottom: 20px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+  }
+  th { background: #fafafa; }
+  .status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 13px;
+    color: #fff;
+  }
+  .ok { background: #2e7d32; }        /* hijau: 2xx */
+  .redirect { background: #f9a825; }   /* kuning: 3xx */
+  .fail { background: #c62828; }       /* merah: 4xx/5xx/error */
+</style>
+</head>
+<body>
+<h1>URL Status Checker</h1>
+<div class="updated">Terakhir diperbarui: 2026-08-20 02:31:50 WIB</div>
+<table>
+<tr><th>URL</th><th>Status</th></tr>
+<tr><td>https://www.eporner.com/video-dlNO7AjhPZk/un-ebwh-356-fumika-kashiwagi/</td><td><span class="status ok">200</span></td></tr>
+</table>
+</body>
+</html>
