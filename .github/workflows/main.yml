@@ -43,12 +43,15 @@ jobs:
             http_code=$(curl -s -o /dev/null -w "%{http_code}" \
               --connect-timeout 10 \
               --max-time 20 \
+              --max-redirs 15 \
               -L -A "$UA" \
+              -b "" \
+              -H "Accept-Language: id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7" \
               "$url" 2> "$curl_err")
             exit_code=$?
 
             if [ $exit_code -ne 0 ] || [ -z "$http_code" ] || [ "$http_code" = "000" ]; then
-              status="ERROR/TIMEOUT"
+              status="$exit_code"   # request gagal total (bukan dapat response), pakai curl exit code sebagai angka
               title="-"
               echo "  -> Detail error untuk $url (curl exit code $exit_code):"
               cat "$curl_err"
@@ -59,6 +62,7 @@ jobs:
                 35) echo "  -> Kemungkinan: SSL/TLS handshake gagal (bisa jadi diblokir di level TLS)" ;;
                 52) echo "  -> Kemungkinan: Server tutup koneksi tanpa respons (sering tanda IP diblokir)" ;;
                 56) echo "  -> Kemungkinan: Gagal menerima data dari server (koneksi direset)" ;;
+                47) echo "  -> Kemungkinan: Terlalu banyak redirect (biasanya perlu cookie/verifikasi browser)" ;;
                 *)  echo "  -> Cek dokumentasi curl exit code untuk kode $exit_code" ;;
               esac
             else
@@ -66,7 +70,9 @@ jobs:
 
               # --- 2. Kalau status 2xx/3xx, ambil judul halaman (<title>) ---
               if [[ "$status" =~ ^[23] ]]; then
-                raw_title=$(curl -s --connect-timeout 10 --max-time 20 -L -A "$UA" "$url" \
+                raw_title=$(curl -s --connect-timeout 10 --max-time 20 --max-redirs 15 -L -A "$UA" -b "" \
+                  -H "Accept-Language: id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7" \
+                  "$url" \
                   | tr '\n' ' ' \
                   | grep -o -i '<title[^>]*>[^<]*</title>' \
                   | head -1 \
@@ -165,9 +171,9 @@ jobs:
           while IFS="$DELIM" read -r url title status; do
             [ -z "$url" ] && continue
 
-            if [[ "$status" =~ ^2 ]]; then
+            if [[ "$status" =~ ^[0-9]+$ ]] && [ "$status" -ge 100 ] && [[ "$status" == 2* ]]; then
               css="ok"
-            elif [[ "$status" =~ ^3 ]]; then
+            elif [[ "$status" =~ ^[0-9]+$ ]] && [ "$status" -ge 100 ] && [[ "$status" == 3* ]]; then
               css="redirect"
             else
               css="fail"
