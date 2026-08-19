@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Cek status setiap URL
+      - name: Cek status & judul setiap URL
         id: check
         run: |
           set +e  # jangan langsung mati kalau salah satu curl gagal
@@ -26,30 +26,47 @@ jobs:
           )
 
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          DELIM=$'\x1f'   # karakter pemisah field, hampir mustahil muncul di judul asli
 
           echo "results<<EOF" >> "$GITHUB_OUTPUT"
 
           for url in "${URLS[@]}"; do
-            # --connect-timeout: batas waktu koneksi awal
-            # --max-time: batas waktu total request
-            # -L: ikuti redirect
-            # -A: User-Agent supaya tidak dianggap bot mentah
+            # --- 1. Cek status code ---
             http_code=$(curl -s -o /dev/null -w "%{http_code}" \
               --connect-timeout 10 \
               --max-time 20 \
               -L -A "$UA" \
               "$url")
-
             exit_code=$?
 
             if [ $exit_code -ne 0 ] || [ -z "$http_code" ] || [ "$http_code" = "000" ]; then
               status="ERROR/TIMEOUT"
+              title="-"
             else
               status="$http_code"
+
+              # --- 2. Kalau status 2xx/3xx, ambil judul halaman (<title>) ---
+              if [[ "$status" =~ ^[23] ]]; then
+                raw_title=$(curl -s --connect-timeout 10 --max-time 20 -L -A "$UA" "$url" \
+                  | tr '\n' ' ' \
+                  | grep -o -i '<title[^>]*>[^<]*</title>' \
+                  | head -1 \
+                  | sed -E 's/<title[^>]*>//I; s#</title>##I')
+                raw_title=$(echo "$raw_title" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+                if [ -z "$raw_title" ]; then
+                  title="(Tanpa Judul)"
+                else
+                  # escape karakter HTML biar tidak merusak tabel
+                  title=$(echo "$raw_title" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+                fi
+              else
+                title="-"
+              fi
             fi
 
-            echo "$url|$status" >> "$GITHUB_OUTPUT"
-            echo "Cek: $url -> $status"
+            echo "${url}${DELIM}${title}${DELIM}${status}" >> "$GITHUB_OUTPUT"
+            echo "Cek: $url -> [$title] -> $status"
           done
 
           echo "EOF" >> "$GITHUB_OUTPUT"
@@ -57,6 +74,7 @@ jobs:
       - name: Generate index.html
         run: |
           NOW=$(TZ='Asia/Jakarta' date '+%Y-%m-%d %H:%M:%S WIB')
+          DELIM=$'\x1f'
 
           cat > index.html << 'HTMLHEAD'
           <!DOCTYPE html>
@@ -67,14 +85,23 @@ jobs:
           <style>
             body {
               font-family: -apple-system, Arial, sans-serif;
-              max-width: 700px;
+              max-width: 900px;
               margin: 40px auto;
               padding: 0 20px;
               background: #f5f5f5;
               color: #222;
             }
             h1 { font-size: 22px; }
-            .updated { color: #666; font-size: 13px; margin-bottom: 20px; }
+            .updated { color: #666; font-size: 13px; margin-bottom: 16px; }
+            #searchBox {
+              width: 100%;
+              box-sizing: border-box;
+              padding: 10px 14px;
+              margin-bottom: 16px;
+              border: 1px solid #ddd;
+              border-radius: 6px;
+              font-size: 14px;
+            }
             table {
               width: 100%;
               border-collapse: collapse;
@@ -86,8 +113,11 @@ jobs:
               text-align: left;
               border-bottom: 1px solid #eee;
               font-size: 14px;
+              vertical-align: top;
             }
             th { background: #fafafa; }
+            td a { color: #1565c0; text-decoration: none; word-break: break-all; }
+            td a:hover { text-decoration: underline; }
             .status {
               display: inline-block;
               padding: 3px 10px;
@@ -95,22 +125,25 @@ jobs:
               font-weight: bold;
               font-size: 13px;
               color: #fff;
+              white-space: nowrap;
             }
             .ok { background: #2e7d32; }        /* hijau: 2xx */
             .redirect { background: #f9a825; }   /* kuning: 3xx */
             .fail { background: #c62828; }       /* merah: 4xx/5xx/error */
+            .no-result { text-align: center; color: #888; padding: 20px; }
           </style>
           </head>
           <body>
           <h1>URL Status Checker</h1>
           <div class="updated">Terakhir diperbarui: NOW_PLACEHOLDER</div>
-          <table>
-          <tr><th>URL</th><th>Status</th></tr>
+          <input type="text" id="searchBox" placeholder="Cari judul video atau URL..." onkeyup="filterTable()">
+          <table id="urlTable">
+          <tr><th>Judul Video</th><th>URL</th><th>Status</th></tr>
           HTMLHEAD
 
           sed -i "s|NOW_PLACEHOLDER|$NOW|" index.html
 
-          while IFS='|' read -r url status; do
+          while IFS="$DELIM" read -r url title status; do
             [ -z "$url" ] && continue
 
             if [[ "$status" =~ ^2 ]]; then
@@ -121,11 +154,30 @@ jobs:
               css="fail"
             fi
 
-            echo "<tr><td>$url</td><td><span class=\"status $css\">$status</span></td></tr>" >> index.html
+            echo "<tr><td>$title</td><td><a href=\"$url\" target=\"_blank\" rel=\"noopener\">$url</a></td><td><span class=\"status $css\">$status</span></td></tr>" >> index.html
           done <<< "${{ steps.check.outputs.results }}"
 
           cat >> index.html << 'HTMLFOOT'
           </table>
+          <div id="noResult" class="no-result" style="display:none;">Tidak ada hasil yang cocok.</div>
+          <script>
+          function filterTable() {
+            var filter = document.getElementById("searchBox").value.toLowerCase();
+            var table = document.getElementById("urlTable");
+            var trs = table.getElementsByTagName("tr");
+            var visibleCount = 0;
+
+            for (var i = 1; i < trs.length; i++) {
+              var tds = trs[i].getElementsByTagName("td");
+              var text = (tds[0].textContent + " " + tds[1].textContent).toLowerCase();
+              var match = text.indexOf(filter) > -1;
+              trs[i].style.display = match ? "" : "none";
+              if (match) visibleCount++;
+            }
+
+            document.getElementById("noResult").style.display = visibleCount === 0 ? "block" : "none";
+          }
+          </script>
           </body>
           </html>
           HTMLFOOT
