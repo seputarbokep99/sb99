@@ -15,6 +15,37 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Siapkan script Python untuk ekstrak judul
+        run: |
+          cat > extract_title.py << 'PYEOF'
+          import sys
+          import re
+          import html
+
+          content = sys.stdin.read()
+          title = None
+
+          # 1. Coba og:title dulu (biasanya server-rendered buat preview link,
+          #    lebih reliable di situs yang render judul asli via JavaScript)
+          m = re.search(r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']*)["\']', content, re.IGNORECASE)
+          if not m:
+              m = re.search(r'<meta[^>]+content=["\']([^"\']*)["\'][^>]+property=["\']og:title["\']', content, re.IGNORECASE)
+          if m:
+              title = m.group(1)
+
+          # 2. Fallback ke tag <title> biasa
+          if not title:
+              m = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
+              if m:
+                  title = m.group(1)
+
+          if title:
+              title = html.unescape(title).strip()
+              title = re.sub(r'\s+', ' ', title)
+              title = html.escape(title)  # escape lagi biar aman ditaruh di HTML output
+              print(title)
+          PYEOF
+
       - name: Cek status & judul setiap URL
         id: check
         run: |
@@ -68,21 +99,14 @@ jobs:
             else
               status="$http_code"
 
-              # --- 2. Kalau status 2xx/3xx, ambil judul halaman (<title>) ---
+              # --- 2. Kalau status 2xx/3xx, ambil judul halaman ---
               if [[ "$status" =~ ^[23] ]]; then
-                raw_title=$(curl -s --connect-timeout 10 --max-time 20 --max-redirs 15 -L -A "$UA" -b "" \
+                title=$(curl -s --connect-timeout 10 --max-time 20 --max-redirs 15 -L -A "$UA" -b "" \
                   -H "Accept-Language: id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7" \
                   "$url" \
-                  | tr '\n' ' ' \
-                  | grep -o -i '<title[^>]*>[^<]*</title>' \
-                  | head -1 \
-                  | sed -E 's/<title[^>]*>//I; s#</title>##I')
-                raw_title=$(echo "$raw_title" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-                if [ -z "$raw_title" ]; then
+                  | python3 extract_title.py)
+                if [ -z "$title" ]; then
                   title="(Tanpa Judul)"
-                else
-                  title=$(echo "$raw_title" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
                 fi
               else
                 title="-"
