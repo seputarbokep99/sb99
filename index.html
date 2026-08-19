@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>URL Status Checker</title>
+<style>
+  body {
+    font-family: -apple-system, Arial, sans-serif;
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+    background: #f5f5f5;
+    color: #222;
+  }
+  h1 { font-size: 22px; }
+  .updated { color: #666; font-size: 13px; margin-bottom: 16px; }
+  #searchBox {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .search-note { color: #888; font-size: 12px; margin: -10px 0 16px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    vertical-align: middle;
+  }
+  th { background: #fafafa; }
+  td a { color: #1565c0; text-decoration: none; word-break: break-all; }
+  td a:hover { text-decoration: underline; }
+  .cover-cell { width: 130px; }
+  .cover-cell img {
+    width: 120px;
+    height: 68px;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+    background: #eee;
+  }
+  .no-cover-placeholder, .no-cover {
+    width: 120px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eee;
+    color: #999;
+    font-size: 11px;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 13px;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .ok { background: #2e7d32; }
+  .redirect { background: #f9a825; }
+  .fail { background: #c62828; }
+  .no-result { text-align: center; color: #888; padding: 20px; }
+  .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .page-link {
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #fff;
+    color: #1565c0;
+    text-decoration: none;
+    font-size: 13px;
+    border: 1px solid #ddd;
+  }
+  .page-link:hover { background: #f0f0f0; }
+  .page-link.active {
+    background: #1565c0;
+    color: #fff;
+    border-color: #1565c0;
+  }
+</style>
+</head>
+<body>
+<h1>URL Status Checker</h1>
+<div class="updated">Terakhir diperbarui: 2026-08-20 03:54:28 WIB &middot; Total 1 video &middot; Halaman 1 dari 1</div>
+<input type="text" id="searchBox" placeholder="Cari judul video atau URL di halaman ini..." onkeyup="filterTable()">
+<div class="search-note">Pencarian hanya berlaku untuk halaman ini. Gunakan navigasi halaman di bawah untuk video lainnya.</div>
+<table id="urlTable">
+<tr><th>Cover</th><th>Judul Video</th><th>URL</th><th>Status</th></tr>
+<tr><td class="cover-cell"><img src="https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00742pl.w800.png" alt="cover" loading="lazy" onerror="this.onerror=null;this.src='';this.alt='(gagal load)';this.classList.add('no-cover')"></td><td>[UN] MIDA-742 - Himari</td><td><a href="https://vkvideo.ru/video672078245_456239157" target="_blank" rel="noopener">https://vkvideo.ru/video672078245_456239157</a></td><td><span class="status ok">200</span></td></tr>
+</table>
+<div id="noResult" class="no-result" style="display:none;">Tidak ada hasil yang cocok.</div>
+
+<script>
+function filterTable() {
+  var filter = document.getElementById("searchBox").value.toLowerCase();
+  var table = document.getElementById("urlTable");
+  var trs = table.getElementsByTagName("tr");
+  var visibleCount = 0;
+
+  for (var i = 1; i < trs.length; i++) {
+    var tds = trs[i].getElementsByTagName("td");
+    var text = (tds[1].textContent + " " + tds[2].textContent).toLowerCase();
+    var match = text.indexOf(filter) > -1;
+    trs[i].style.display = match ? "" : "none";
+    if (match) visibleCount++;
+  }
+
+  document.getElementById("noResult").style.display = visibleCount === 0 ? "block" : "none";
+}
+</script>
+</body>
+</html>
