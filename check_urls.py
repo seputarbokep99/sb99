@@ -455,7 +455,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 20; // Batas card per halaman
+  var ITEMS_PER_PAGE = 30; // Batas card per halaman
   var currentPage = 1;
   var currentCategory = null;
   var filtered = [];
