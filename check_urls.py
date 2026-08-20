@@ -136,7 +136,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     overflow-x: hidden;
   }
 
-  /* Header */
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
@@ -154,7 +153,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   h1:hover { opacity: 0.8; }
 
-  /* Search Bar */
   .search-container {
     width: 100%;
     max-width: 1000px;
@@ -189,7 +187,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   #searchBtn:hover { opacity: 0.9; }
 
-  /* Category Wrapper */
   .category-wrapper {
     background: var(--bg);
     padding: 12px 24px;
@@ -226,7 +223,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: var(--accent);
   }
 
-  /* Burger Button */
   .burger-btn {
     display: none;
     padding: 10px 16px;
@@ -241,7 +237,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
-  /* Main Grid */
   main {
     flex: 1;
     width: 100%;
@@ -332,7 +327,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border: 1px dashed var(--border);
   }
 
-  /* Pagination */
   .pagination {
     display: flex;
     justify-content: center;
@@ -365,7 +359,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     cursor: not-allowed;
   }
 
-  /* Video Modal/Player */
+  /* Video Modal */
   .video-modal {
     display: none;
     position: fixed;
@@ -436,7 +430,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border: none;
   }
 
-  /* Footer */
   footer {
     background: var(--card-bg);
     border-top: 1px solid var(--border);
@@ -447,7 +440,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     margin-top: auto;
   }
 
-  /* Responsive */
   @media (max-width: 768px) {
     .video-grid { 
       grid-template-columns: 1fr;
@@ -528,7 +520,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   Dibuat dengan ❤️ dan ☕
 </footer>
 
-<!-- Video Modal Player -->
 <div class="video-modal" id="videoModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -545,9 +536,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 20;
+  var ITEMS_PER_PAGE = 30;
   var currentPage = 1;
   var currentCategory = null;
+  var currentSearch = "";
   var filtered = [];
 
   var videoGrid = document.getElementById("videoGrid");
@@ -568,13 +560,75 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     return div.innerHTML;
   }
 
+  // ===== URL PARAMETER SYSTEM =====
+  function getParams() {
+    var params = new URLSearchParams(window.location.search);
+    return {
+      cat: params.get("cat") || null,
+      page: parseInt(params.get("page")) || 1,
+      q: params.get("q") || ""
+    };
+  }
+
+  function updateURL() {
+    var params = new URLSearchParams();
+    
+    if (currentCategory) {
+      params.set("cat", currentCategory);
+    }
+    
+    if (currentPage > 1) {
+      params.set("page", currentPage.toString());
+    }
+    
+    if (currentSearch) {
+      params.set("q", currentSearch);
+    }
+    
+    var newUrl = window.location.pathname;
+    var queryString = params.toString();
+    if (queryString) {
+      newUrl += "?" + queryString;
+    }
+    
+    // Update URL tanpa reload
+    window.history.replaceState({}, "", newUrl);
+  }
+
+  function loadStateFromURL() {
+    var params = getParams();
+    
+    // Set kategori dari URL
+    if (params.cat) {
+      // Validasi apakah kategori ada di data
+      var validCategories = [];
+      ALL_DATA.forEach(function (item) {
+        if (validCategories.indexOf(item.kategori) === -1) validCategories.push(item.kategori);
+      });
+      
+      if (validCategories.indexOf(params.cat) > -1) {
+        currentCategory = params.cat;
+      }
+    }
+    
+    // Set halaman dari URL
+    if (params.page && params.page > 0) {
+      currentPage = params.page;
+    }
+    
+    // Set pencarian dari URL
+    if (params.q) {
+      currentSearch = params.q;
+      searchBox.value = currentSearch;
+    }
+  }
+
   function createCard(item) {
     var ratioClass = item.rasio === "3:2" ? "ratio-3-2" : "ratio-16-9";
     var coverHtml = item.cover 
       ? '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" class="cover-img" onerror="this.onerror=null;this.classList.add(\'broken\');this.alt=\'Error\';">'
       : '<div class="no-cover">No Cover</div>';
     
-    // Cover clickable - buka modal player
     var coverLink = '<div class="cover-container ' + ratioClass + '" data-url="' + escapeHtml(item.url) + '" data-title="' + escapeHtml(item.judul) + '">' + coverHtml + '</div>';
 
     return '<div class="video-card">' +
@@ -587,13 +641,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     modalTitle.textContent = title;
     videoPlayer.src = url;
     videoModal.classList.add("active");
-    document.body.style.overflow = "hidden"; // Prevent background scroll
+    document.body.style.overflow = "hidden";
   }
 
   function closeVideoPlayer() {
-    videoPlayer.src = ""; // Stop video
+    videoPlayer.src = "";
     videoModal.classList.remove("active");
-    document.body.style.overflow = ""; // Restore scroll
+    document.body.style.overflow = "";
   }
 
   function renderCategoryTabs() {
@@ -607,7 +661,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return;
     }
 
-    if (!currentCategory && categories.length > 0) currentCategory = categories[0];
+    // Jika belum ada kategori aktif, pakai kategori pertama
+    if (!currentCategory && categories.length > 0) {
+      currentCategory = categories[0];
+    }
 
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
@@ -620,6 +677,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         currentPage = 1;
         applyFilter();
         renderCategoryTabs();
+        updateURL(); // Update URL saat ganti kategori
         categoryTabsEl.classList.remove("open");
       });
     });
@@ -642,7 +700,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       noResult.style.display = "none";
       videoGrid.innerHTML = pageItems.map(createCard).join("");
       
-      // Add click listeners to cover containers
       videoGrid.querySelectorAll(".cover-container").forEach(function (el) {
         el.addEventListener("click", function () {
           var url = el.getAttribute("data-url");
@@ -653,6 +710,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     renderPagination(totalPages);
+    updateURL(); // Update URL setiap render
   }
 
   function renderPagination(totalPages) {
@@ -694,6 +752,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   function applyFilter() {
     var q = searchBox.value.trim().toLowerCase();
+    currentSearch = q; // Simpan state pencarian
+    
     filtered = ALL_DATA.filter(function (item) {
       var matchCategory = !currentCategory || item.kategori === currentCategory;
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1;
@@ -718,23 +778,22 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     categoryTabsEl.classList.toggle("open");
   });
 
-  // Close modal
   modalClose.addEventListener("click", closeVideoPlayer);
   
-  // Close modal when clicking outside
   videoModal.addEventListener("click", function (e) {
     if (e.target === videoModal) {
       closeVideoPlayer();
     }
   });
   
-  // Close modal with Escape key
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && videoModal.classList.contains("active")) {
       closeVideoPlayer();
     }
   });
 
+  // ===== INIT: Load state dari URL =====
+  loadStateFromURL();
   renderCategoryTabs();
   applyFilter();
 })();
