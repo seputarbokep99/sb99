@@ -1,10 +1,9 @@
-# Format tiap baris (pisahkan pakai tanda | ):
-# URL_VIDEO | JUDUL | URL_COVER | KATEGORI | RASIO
-#
-# Baris kosong dan baris yang diawali # akan diabaikan.
-# URL_COVER boleh dikosongkan (biarkan di antara | | ) kalau belum ada gambar.
-# KATEGORI bebas, tab filter di website akan otomatis mengikuti kategori yang ada di sini.
-# RASIO isi salah satu: 16:9  atau  3:2  (kalau dikosongkan, default-nya 16:9)
-
-https://vkvideo.ru/video672078245_456239157 | [UN] MIDA-742 - Himari | https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00742pl.w800.png
- | Bokep Jepang | 3:2
+[
+  {
+    "url": "https://vkvideo.ru/video672078245_456239157",
+    "judul": "[UN] MIDA-742 - Himari",
+    "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00742pl.w800.png",
+    "kategori": "Bokep Jepang",
+    "rasio": "3:2"
+  }
+]
