@@ -13,23 +13,21 @@ SITE_TITLE = "SeputarBokep99"
 
 
 def load_videos(path=DATA_FILE):
-    """Baca daftar video dari file JSON. Tiap entri wajib punya 'url', field lain opsional."""
+    """Baca daftar video dari file JSON."""
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
     if not isinstance(raw, list):
-        print(f"ERROR: {path} harus berupa JSON array (list), bukan {type(raw).__name__}.", file=sys.stderr)
+        print(f"ERROR: {path} harus berupa JSON array.", file=sys.stderr)
         sys.exit(1)
 
     videos = []
     for idx, entry in enumerate(raw, 1):
         if not isinstance(entry, dict):
-            print(f"  -> Entri ke-{idx} diabaikan (bukan object JSON): {entry}", file=sys.stderr)
             continue
 
         url = str(entry.get("url", "")).strip()
         if not url:
-            print(f"  -> Entri ke-{idx} diabaikan (field 'url' kosong/tidak ada)", file=sys.stderr)
             continue
 
         judul = str(entry.get("judul", "")).strip() or "(Tanpa Judul)"
@@ -38,8 +36,6 @@ def load_videos(path=DATA_FILE):
 
         rasio = str(entry.get("rasio", "")).strip().replace(" ", "")
         if rasio not in ("16:9", "3:2"):
-            if rasio:
-                print(f"  -> Entri ke-{idx}: rasio '{rasio}' tidak dikenali, pakai default 16:9", file=sys.stderr)
             rasio = "16:9"
 
         videos.append({"url": url, "judul": judul, "cover": cover, "kategori": kategori, "rasio": rasio})
@@ -48,9 +44,11 @@ def load_videos(path=DATA_FILE):
 
 
 def check_status(scraper, url):
-    """Cek status HTTP. Kalau request gagal total, pakai nama exception sbg status."""
+    """Cek status HTTP."""
     try:
-        response = scraper.get(url, timeout=20)
+        # Timeout lebih lama untuk VK
+        timeout = 30 if "vk.ru" in url else 15
+        response = scraper.get(url, timeout=timeout)
         return response.status_code
     except Exception as e:
         print(f"  -> Gagal cek {url}: {e}", file=sys.stderr)
@@ -64,7 +62,8 @@ def main():
     scraper.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                       "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-        "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://vk.com/",
     })
 
     videos = load_videos()
@@ -74,25 +73,19 @@ def main():
         status = check_status(scraper, v["url"])
         if status == 200:
             print(f"Cek: {v['url']} -> [{v['judul']}] ({v['kategori']}) -> {status} (DITAMPILKAN)")
-            results.append({
-                "judul": v["judul"],
-                "url": v["url"],
-                "cover": v["cover"],
-                "kategori": v["kategori"],
-                "rasio": v["rasio"],
-            })
+            results.append(v)
         else:
-            print(f"Cek: {v['url']} -> [{v['judul']}] ({v['kategori']}) -> {status} (DISEMBUNYIKAN, bukan 200)")
-        time.sleep(1)  # jeda kecil antar-request biar nggak keliatan kayak burst bot
+            print(f"Cek: {v['url']} -> [{v['judul']}] ({v['kategori']}) -> {status} (DISEMBUNYIKAN)")
+        time.sleep(0.5)  # Jeda antar request
 
     return results
 
 
 def cleanup_legacy_pages():
-    """Hapus file page*.html dari versi lama (sekarang paginasi full client-side, 1 file aja)."""
+    """Hapus file page*.html lama."""
     for f in glob.glob("page*.html"):
         os.remove(f)
-        print(f"Hapus file lama yang sudah tidak dipakai: {f}")
+        print(f"Hapus file lama: {f}")
 
 
 def build_html(results):
@@ -100,6 +93,7 @@ def build_html(results):
     total_items = len(results)
 
     json_data = json.dumps(results, ensure_ascii=False)
+    # Escape script tags inside JSON to prevent breaking HTML
     json_data_safe = json_data.replace("</script", "<\\/script").replace("<!--", "<\\!--")
 
     template = HTML_TEMPLATE
@@ -132,7 +126,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --btn-bg: #ffffff;
     --btn-text: #1565c0;
     --accent: #1565c0;
-    --cover-ratio: 16 / 9;
+    --hover-bg: #f0f0f0;
   }
   [data-theme="dark"] {
     --bg: #121212;
@@ -146,217 +140,316 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --btn-bg: #2a2a2a;
     --btn-text: #64b5f6;
     --accent: #64b5f6;
+    --hover-bg: #2c2c2c;
   }
-  * { box-sizing: border-box; }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    max-width: 1100px;
-    margin: 40px auto;
-    padding: 0 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
-    transition: background 0.2s, color 0.2s;
-  }
-  h1 { font-size: 26px; margin-bottom: 4px; letter-spacing: 0.5px; }
-  .updated { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
-
-  .toolbar {
+    min-height: 100vh;
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Header Area */
+  header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
-  #searchBox {
-    flex: 1 1 260px;
-    padding: 10px 14px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 14px;
-    background: var(--input-bg);
+
+  h1 { 
+    font-size: 24px; 
+    font-weight: 800; 
+    letter-spacing: -0.5px;
     color: var(--text);
-  }
-  .toolbar select, .toolbar button {
-    padding: 9px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--btn-bg);
-    color: var(--btn-text);
-    font-size: 13px;
-    cursor: pointer;
   }
 
   .theme-switch {
     position: relative;
     display: inline-block;
-    width: 46px;
-    height: 26px;
-    flex-shrink: 0;
+    width: 44px;
+    height: 24px;
   }
-  .theme-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
+  .theme-switch input { opacity: 0; width: 0; height: 0; }
   .theme-slider {
     position: absolute;
     cursor: pointer;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--border);
-    border-radius: 999px;
-    transition: background 0.2s;
+    background-color: var(--border);
+    border-radius: 34px;
+    transition: .4s;
   }
-  .theme-slider::before {
-    content: "";
+  .theme-slider:before {
     position: absolute;
-    width: 20px;
-    height: 20px;
+    content: "";
+    height: 18px;
+    width: 18px;
     left: 3px;
-    top: 3px;
-    background: #fff;
+    bottom: 3px;
+    background-color: white;
     border-radius: 50%;
-    transition: transform 0.2s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: .4s;
   }
-  .theme-switch input:checked + .theme-slider {
-    background: var(--accent);
-  }
-  .theme-switch input:checked + .theme-slider::before {
-    transform: translateX(20px);
-  }
-  .search-note { color: var(--muted); font-size: 12px; margin: -6px 0 16px; }
+  .theme-switch input:checked + .theme-slider { background-color: var(--accent); }
+  .theme-switch input:checked + .theme-slider:before { transform: translateX(20px); }
 
-  .category-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 16px;
+  /* Search Bar */
+  .search-container {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  #searchBox {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 16px;
+    background: var(--input-bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #searchBox:focus { border-color: var(--accent); }
+
+  /* Category Tabs */
+  .category-wrapper {
+    background: var(--bg);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
   }
   .category-tabs {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
   .tab {
-    padding: 8px 18px;
-    border-radius: 999px;
+    padding: 8px 20px;
+    border-radius: 20px;
     background: var(--card-bg);
     border: 1px solid var(--border);
     color: var(--text);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
   }
-  .tab:hover { border-color: var(--accent); }
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
   .tab.active {
     background: var(--accent);
     color: #fff;
     border-color: var(--accent);
   }
 
-  table {
+  /* Main Content Grid */
+  main {
+    flex: 1;
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
     width: 100%;
-    border-collapse: collapse;
-    background: var(--card-bg);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
-  th, td {
-    padding: 10px 14px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
-    vertical-align: middle;
-  }
-  th { background: var(--header-bg); }
-  td a { color: var(--link); text-decoration: none; word-break: break-all; }
-  td a:hover { text-decoration: underline; }
 
-  .cover-cell { width: 130px; }
-  .cover-cell img {
-    width: 120px;
-    object-fit: cover;
-    border-radius: 4px;
-    display: block;
-    background: var(--header-bg);
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
   }
-  .no-cover-placeholder, .cover-cell img.broken {
-    width: 120px;
+
+  .video-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+  }
+  .video-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+  }
+
+  .cover-container {
+    position: relative;
+    width: 100%;
+    background: var(--header-bg);
+    overflow: hidden;
+  }
+  
+  /* Aspect Ratio Handling */
+  .cover-container.ratio-16-9 { aspect-ratio: 16 / 9; }
+  .cover-container.ratio-3-2 { aspect-ratio: 3 / 2; }
+
+  .cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s;
+  }
+  .cover-img.broken { opacity: 0.5; }
+  
+  .no-cover {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--header-bg);
     color: var(--muted);
-    font-size: 11px;
-    border-radius: 4px;
-    text-align: center;
+    font-size: 14px;
+    background: var(--header-bg);
   }
 
-  .no-result { text-align: center; color: var(--muted); padding: 24px; background: var(--card-bg); }
-
-  .pagination {
+  .card-info {
+    padding: 16px;
+    flex: 1;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    justify-content: center;
-    margin-top: 20px;
+    flex-direction: column;
   }
-  .page-link {
-    padding: 6px 12px;
-    border-radius: 6px;
-    background: var(--btn-bg);
+
+  .video-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    color: var(--text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .video-link {
+    font-size: 13px;
     color: var(--link);
     text-decoration: none;
-    font-size: 13px;
+    word-break: break-all;
+    margin-top: auto;
+    opacity: 0.8;
+  }
+  .video-link:hover { text-decoration: underline; opacity: 1; }
+
+  .no-result {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 18px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 40px;
+    padding-bottom: 20px;
+  }
+  .page-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text);
     border: 1px solid var(--border);
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
   }
-  .page-link:hover { opacity: 0.8; }
-  .page-link.active { background: var(--link); color: #fff; border-color: var(--link); }
-  .page-link.disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+  .page-btn:hover:not(.disabled) { background: var(--hover-bg); border-color: var(--accent); }
+  .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .page-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Footer */
+  footer {
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: auto;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+    header { padding: 12px 16px; }
+    main { padding: 16px; }
+    .card-info { padding: 12px; }
+    .video-title { font-size: 14px; }
+  }
 </style>
 </head>
 <body>
-<h1>__SITE_TITLE__</h1>
-<div class="updated">Terakhir diperbarui: __NOW__ &middot; Total __TOTAL__ video</div>
 
-<div class="category-row">
+<header>
+  <div class="header-top">
+    <h1>__SITE_TITLE__</h1>
+    <label class="theme-switch">
+      <input type="checkbox" id="themeToggle">
+      <span class="theme-slider"></span>
+    </label>
+  </div>
+  <div class="search-container">
+    <input type="text" id="searchBox" placeholder="Cari video...">
+  </div>
+</header>
+
+<div class="category-wrapper">
   <div class="category-tabs" id="categoryTabs"></div>
-  <label class="theme-switch">
-    <input type="checkbox" id="themeToggle">
-    <span class="theme-slider"></span>
-  </label>
 </div>
 
-<div class="toolbar">
-  <input type="text" id="searchBox" placeholder="Cari judul video atau URL...">
-  <button id="searchBtn">Cari</button>
-</div>
+<main>
+  <div class="video-grid" id="videoGrid"></div>
+  <div id="noResult" class="no-result" style="display:none;">Tidak ada video yang cocok.</div>
+  
+  <div id="pagination" class="pagination"></div>
+</main>
 
-<table id="urlTable">
-  <thead>
-    <tr><th>Cover</th><th>Judul Video</th><th>Link Video</th></tr>
-  </thead>
-  <tbody id="tableBody"></tbody>
-</table>
-<div id="noResult" class="no-result" style="display:none;">Tidak ada hasil yang cocok.</div>
-<div id="pagination" class="pagination"></div>
+<footer>
+  Copyright @ team 2026
+</footer>
 
 <script type="application/json" id="video-data">__DATA_JSON__</script>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 20;
+  var ITEMS_PER_PAGE = 20; // Sesuaikan jumlah item per halaman
   var currentPage = 1;
-  var currentCategory = "Semua";
-  var filtered = ALL_DATA;
+  var currentCategory = null; // Null berarti belum filter, nanti diisi kategori pertama
+  var filtered = [];
 
-  var tableBody = document.getElementById("tableBody");
+  var videoGrid = document.getElementById("videoGrid");
   var noResult = document.getElementById("noResult");
   var paginationEl = document.getElementById("pagination");
   var searchBox = document.getElementById("searchBox");
-  var searchBtn = document.getElementById("searchBtn");
   var themeToggle = document.getElementById("themeToggle");
   var categoryTabsEl = document.getElementById("categoryTabs");
 
@@ -366,27 +459,46 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     return div.innerHTML;
   }
 
-  function renderRow(item) {
-    var ratioCss = item.rasio === "3:2" ? "3/2" : "16/9";
+  function createCard(item) {
+    var ratioClass = item.rasio === "3:2" ? "ratio-3-2" : "ratio-16-9";
+    
     var coverHtml;
     if (item.cover) {
-      coverHtml = '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" style="aspect-ratio:' + ratioCss + '" ' +
-        'onerror="this.onerror=null;this.src=\'\';this.alt=\'(gagal load)\';this.classList.add(\'broken\')">';
+      coverHtml = '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" class="cover-img" ' +
+        'onerror="this.onerror=null;this.classList.add(\'broken\');this.alt=\'Error\';">';
     } else {
-      coverHtml = '<div class="no-cover-placeholder" style="aspect-ratio:' + ratioCss + '">Tidak ada cover</div>';
+      coverHtml = '<div class="no-cover">No Cover</div>';
     }
-    return '<tr>' +
-      '<td class="cover-cell">' + coverHtml + '</td>' +
-      '<td>' + escapeHtml(item.judul) + '</td>' +
-      '<td><a href="' + escapeHtml(item.url) + '">' + escapeHtml(item.url) + '</a></td>' +
-      '</tr>';
+
+    // Wrap cover in anchor tag so clicking it opens the link
+    var coverLink = '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="cover-container ' + ratioClass + '">' + coverHtml + '</a>';
+
+    return '<div class="video-card">' +
+      coverLink +
+      '<div class="card-info">' +
+        '<div class="video-title">' + escapeHtml(item.judul) + '</div>' +
+        '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="video-link">' + escapeHtml(item.url) + '</a>' +
+      '</div>' +
+    '</div>';
   }
 
   function renderCategoryTabs() {
-    var categories = ["Semua"];
+    // Get unique categories excluding "Semua" logic if desired, but here we just list what exists
+    var categories = [];
     ALL_DATA.forEach(function (item) {
       if (categories.indexOf(item.kategori) === -1) categories.push(item.kategori);
     });
+
+    // If no categories found (empty data), hide tabs
+    if (categories.length === 0) {
+      categoryTabsEl.parentElement.style.display = 'none';
+      return;
+    }
+
+    // Set default category if none selected
+    if (!currentCategory && categories.length > 0) {
+      currentCategory = categories[0];
+    }
 
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
@@ -398,7 +510,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         currentCategory = el.getAttribute("data-cat");
         currentPage = 1;
         applyFilter();
-        renderCategoryTabs();
+        renderCategoryTabs(); // Re-render to update active state
       });
     });
   }
@@ -406,6 +518,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   function render() {
     var totalItems = filtered.length;
     var totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+    
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
@@ -413,11 +526,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var pageItems = filtered.slice(start, start + ITEMS_PER_PAGE);
 
     if (pageItems.length === 0) {
-      tableBody.innerHTML = "";
+      videoGrid.innerHTML = "";
       noResult.style.display = "block";
     } else {
       noResult.style.display = "none";
-      tableBody.innerHTML = pageItems.map(renderRow).join("");
+      videoGrid.innerHTML = pageItems.map(createCard).join("");
     }
 
     renderPagination(totalPages);
@@ -429,14 +542,29 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return;
     }
     var parts = [];
-    parts.push('<span class="page-link' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</span>');
-    for (var p = 1; p <= totalPages; p++) {
-      parts.push('<span class="page-link' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</span>');
+    
+    // First Button
+    parts.push('<button class="page-btn' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</button>');
+    
+    // Numbered Buttons (Simple logic: show all or limit range if needed)
+    // For simplicity, showing all pages. If many pages, consider windowing.
+    var startPage = Math.max(1, currentPage - 2);
+    var endPage = Math.min(totalPages, currentPage + 2);
+    
+    if (startPage > 1) parts.push('<span class="page-btn disabled">...</span>');
+
+    for (var p = startPage; p <= endPage; p++) {
+      parts.push('<button class="page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>');
     }
-    parts.push('<span class="page-link' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</span>');
+
+    if (endPage < totalPages) parts.push('<span class="page-btn disabled">...</span>');
+
+    // Last Button
+    parts.push('<button class="page-btn' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</button>');
+
     paginationEl.innerHTML = parts.join("\n");
 
-    paginationEl.querySelectorAll(".page-link:not(.disabled)").forEach(function (el) {
+    paginationEl.querySelectorAll(".page-btn:not(.disabled)").forEach(function (el) {
       el.addEventListener("click", function () {
         currentPage = parseInt(el.getAttribute("data-page"), 10);
         render();
@@ -449,27 +577,25 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var q = searchBox.value.trim().toLowerCase();
 
     filtered = ALL_DATA.filter(function (item) {
-      var matchCategory = currentCategory === "Semua" || item.kategori === currentCategory;
+      // Filter by Category (if currentCategory is set)
+      var matchCategory = !currentCategory || item.kategori === currentCategory;
+      
+      // Filter by Search
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1 || item.url.toLowerCase().indexOf(q) > -1;
+      
       return matchCategory && matchSearch;
     });
 
     render();
   }
 
-  searchBtn.addEventListener("click", function () {
+  // Event Listeners for Search
+  searchBox.addEventListener("input", function () {
     currentPage = 1;
     applyFilter();
   });
 
-  searchBox.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      currentPage = 1;
-      applyFilter();
-    }
-  });
-
-  // --- Tema (light/dark) via toggle switch, disimpan supaya nyaman dipakai lagi ---
+  // Theme Logic
   var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
   themeToggle.checked = savedTheme === "dark";
@@ -479,10 +605,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     localStorage.setItem("urlchecker-theme", next);
   });
 
-  // --- Rasio cover sekarang ditentukan per video lewat kolom RASIO di videos.txt ---
-
+  // Init
   renderCategoryTabs();
-  render();
+  applyFilter(); // This will trigger render()
 })();
 </script>
 </body>
