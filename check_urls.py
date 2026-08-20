@@ -1,20 +1,19 @@
 import cloudscraper
 import html
-import re
+import json
 import sys
 import time
 import glob
 import os
-import math
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-ITEMS_PER_PAGE = 20  # ganti angka ini kalau mau lebih banyak/sedikit item per halaman
 DATA_FILE = "videos.txt"
+SITE_TITLE = "STREAMINGIN"  # ganti di sini kalau mau ubah nama situs
 
 
 def load_videos(path=DATA_FILE):
-    """Baca url|judul|cover dari file txt. Baris kosong / diawali # diabaikan."""
+    """Baca url|judul|cover|kategori dari file txt. Baris kosong / diawali # diabaikan."""
     videos = []
     with open(path, "r", encoding="utf-8") as f:
         for line_num, raw_line in enumerate(f, 1):
@@ -30,13 +29,23 @@ def load_videos(path=DATA_FILE):
             url = parts[0].strip()
             judul = parts[1].strip() if len(parts) > 1 else ""
             cover = parts[2].strip() if len(parts) > 2 else ""
+            kategori = parts[3].strip() if len(parts) > 3 else ""
+            rasio = parts[4].strip() if len(parts) > 4 else ""
 
             if not url:
                 continue
             if not judul:
                 judul = "(Tanpa Judul)"
+            if not kategori:
+                kategori = "Lainnya"
 
-            videos.append({"url": url, "judul": judul, "cover": cover})
+            rasio_normalized = rasio.replace(" ", "")
+            if rasio_normalized not in ("16:9", "3:2"):
+                if rasio_normalized:
+                    print(f"  -> Baris {line_num}: rasio '{rasio}' tidak dikenali, pakai default 16:9", file=sys.stderr)
+                rasio_normalized = "16:9"
+
+            videos.append({"url": url, "judul": judul, "cover": cover, "kategori": kategori, "rasio": rasio_normalized})
     return videos
 
 
@@ -65,139 +74,180 @@ def main():
 
     for v in videos:
         status = check_status(scraper, v["url"])
-        print(f"Cek: {v['url']} -> [{v['judul']}] -> {status}")
-        results.append({**v, "status": status})
+        print(f"Cek: {v['url']} -> [{v['judul']}] ({v['kategori']}) -> {status}")
+        results.append({
+            "judul": v["judul"],
+            "url": v["url"],
+            "cover": v["cover"],
+            "kategori": v["kategori"],
+            "rasio": v["rasio"],
+            "status": str(status),
+        })
         time.sleep(1)  # jeda kecil antar-request biar nggak keliatan kayak burst bot
 
     return results
 
 
-def status_css_class(status):
-    status_str = str(status)
-    if status_str.isdigit() and 200 <= int(status_str) < 300:
-        return "ok"
-    if status_str.isdigit() and 300 <= int(status_str) < 400:
-        return "redirect"
-    return "fail"
+def cleanup_legacy_pages():
+    """Hapus file page*.html dari versi lama (sekarang paginasi full client-side, 1 file aja)."""
+    for f in glob.glob("page*.html"):
+        os.remove(f)
+        print(f"Hapus file lama yang sudah tidak dipakai: {f}")
 
 
-def render_row(item):
-    safe_title = html.escape(item["judul"])
-    safe_url = html.escape(item["url"])
-    safe_status = html.escape(str(item["status"]))
-    css = status_css_class(item["status"])
+def build_html(results):
+    now_str = datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S WIB")
+    total_items = len(results)
 
-    if item["cover"]:
-        safe_cover = html.escape(item["cover"])
-        cover_html = (
-            f'<img src="{safe_cover}" alt="cover" loading="lazy" '
-            f'onerror="this.onerror=null;this.src=\'\';this.alt=\'(gagal load)\';this.classList.add(\'no-cover\')">'
-        )
-    else:
-        cover_html = '<div class="no-cover-placeholder">Tidak ada cover</div>'
+    json_data = json.dumps(results, ensure_ascii=False)
+    json_data_safe = json_data.replace("</script", "<\\/script").replace("<!--", "<\\!--")
 
-    return (
-        f'<tr>'
-        f'<td class="cover-cell">{cover_html}</td>'
-        f'<td>{safe_title}</td>'
-        f'<td><a href="{safe_url}" target="_blank" rel="noopener">{safe_url}</a></td>'
-        f'<td><span class="status {css}">{safe_status}</span></td>'
-        f'</tr>'
-    )
+    template = HTML_TEMPLATE
+    template = template.replace("__SITE_TITLE__", html.escape(SITE_TITLE))
+    template = template.replace("__NOW__", html.escape(now_str))
+    template = template.replace("__TOTAL__", str(total_items))
+    template = template.replace("__DATA_JSON__", json_data_safe)
+
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(template)
+    print(f"index.html dibuat ({total_items} video)")
 
 
-def render_pagination(current_page, total_pages):
-    if total_pages <= 1:
-        return ""
-
-    def page_filename(p):
-        return "index.html" if p == 1 else f"page{p}.html"
-
-    links = []
-
-    if current_page > 1:
-        links.append(f'<a href="{page_filename(current_page - 1)}" class="page-link">&laquo; Sebelumnya</a>')
-
-    for p in range(1, total_pages + 1):
-        if p == current_page:
-            links.append(f'<span class="page-link active">{p}</span>')
-        else:
-            links.append(f'<a href="{page_filename(p)}" class="page-link">{p}</a>')
-
-    if current_page < total_pages:
-        links.append(f'<a href="{page_filename(current_page + 1)}" class="page-link">Selanjutnya &raquo;</a>')
-
-    return '<div class="pagination">' + "\n".join(links) + '</div>'
-
-
-def render_page(items, current_page, total_pages, now_str, total_items):
-    rows_html = "\n".join(render_row(item) for item in items) if items else ""
-    pagination_html = render_pagination(current_page, total_pages)
-
-    page = f"""<!DOCTYPE html>
-<html lang="id">
+HTML_TEMPLATE = r"""<!DOCTYPE html>
+<html lang="id" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<title>URL Status Checker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__SITE_TITLE__</title>
 <style>
-  body {{
-    font-family: -apple-system, Arial, sans-serif;
-    max-width: 1000px;
+  :root {
+    --bg: #f5f5f5;
+    --card-bg: #ffffff;
+    --text: #1a1a1a;
+    --muted: #666666;
+    --border: #e0e0e0;
+    --header-bg: #fafafa;
+    --link: #1565c0;
+    --input-bg: #ffffff;
+    --btn-bg: #ffffff;
+    --btn-text: #1565c0;
+    --accent: #1565c0;
+    --cover-ratio: 16 / 9;
+  }
+  [data-theme="dark"] {
+    --bg: #121212;
+    --card-bg: #1e1e1e;
+    --text: #e8e8e8;
+    --muted: #a0a0a0;
+    --border: #333333;
+    --header-bg: #262626;
+    --link: #64b5f6;
+    --input-bg: #2a2a2a;
+    --btn-bg: #2a2a2a;
+    --btn-text: #64b5f6;
+    --accent: #64b5f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    max-width: 1100px;
     margin: 40px auto;
     padding: 0 20px;
-    background: #f5f5f5;
-    color: #222;
-  }}
-  h1 {{ font-size: 22px; }}
-  .updated {{ color: #666; font-size: 13px; margin-bottom: 16px; }}
-  #searchBox {{
-    width: 100%;
-    box-sizing: border-box;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.2s, color 0.2s;
+  }
+  h1 { font-size: 26px; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .updated { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  #searchBox {
+    flex: 1 1 260px;
     padding: 10px 14px;
-    margin-bottom: 16px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 14px;
-  }}
-  .search-note {{ color: #888; font-size: 12px; margin: -10px 0 16px; }}
-  table {{
+    background: var(--input-bg);
+    color: var(--text);
+  }
+  .toolbar select, .toolbar button {
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .search-note { color: var(--muted); font-size: 12px; margin: -6px 0 16px; }
+
+  .category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tab:hover { border-color: var(--accent); }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  table {
     width: 100%;
     border-collapse: collapse;
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }}
-  th, td {{
+    background: var(--card-bg);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  th, td {
     padding: 10px 14px;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
     font-size: 14px;
     vertical-align: middle;
-  }}
-  th {{ background: #fafafa; }}
-  td a {{ color: #1565c0; text-decoration: none; word-break: break-all; }}
-  td a:hover {{ text-decoration: underline; }}
-  .cover-cell {{ width: 130px; }}
-  .cover-cell img {{
+  }
+  th { background: var(--header-bg); }
+  td a { color: var(--link); text-decoration: none; word-break: break-all; }
+  td a:hover { text-decoration: underline; }
+
+  .cover-cell { width: 130px; }
+  .cover-cell img {
     width: 120px;
-    height: 68px;
     object-fit: cover;
     border-radius: 4px;
     display: block;
-    background: #eee;
-  }}
-  .no-cover-placeholder, .no-cover {{
+    background: var(--header-bg);
+  }
+  .no-cover-placeholder, .cover-cell img.broken {
     width: 120px;
-    height: 68px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #eee;
-    color: #999;
+    background: var(--header-bg);
+    color: var(--muted);
     font-size: 11px;
     border-radius: 4px;
     text-align: center;
-  }}
-  .status {{
+  }
+
+  .status {
     display: inline-block;
     padding: 3px 10px;
     border-radius: 12px;
@@ -205,103 +255,209 @@ def render_page(items, current_page, total_pages, now_str, total_items):
     font-size: 13px;
     color: #fff;
     white-space: nowrap;
-  }}
-  .ok {{ background: #2e7d32; }}
-  .redirect {{ background: #f9a825; }}
-  .fail {{ background: #c62828; }}
-  .no-result {{ text-align: center; color: #888; padding: 20px; }}
-  .pagination {{
+  }
+  .ok { background: #2e7d32; }
+  .redirect { background: #f9a825; }
+  .fail { background: #c62828; }
+
+  .no-result { text-align: center; color: var(--muted); padding: 24px; background: var(--card-bg); }
+
+  .pagination {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     justify-content: center;
     margin-top: 20px;
-  }}
-  .page-link {{
+  }
+  .page-link {
     padding: 6px 12px;
     border-radius: 6px;
-    background: #fff;
-    color: #1565c0;
+    background: var(--btn-bg);
+    color: var(--link);
     text-decoration: none;
     font-size: 13px;
-    border: 1px solid #ddd;
-  }}
-  .page-link:hover {{ background: #f0f0f0; }}
-  .page-link.active {{
-    background: #1565c0;
-    color: #fff;
-    border-color: #1565c0;
-  }}
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .page-link:hover { opacity: 0.8; }
+  .page-link.active { background: var(--link); color: #fff; border-color: var(--link); }
+  .page-link.disabled { opacity: 0.4; cursor: default; pointer-events: none; }
 </style>
 </head>
 <body>
-<h1>URL Status Checker</h1>
-<div class="updated">Terakhir diperbarui: {now_str} &middot; Total {total_items} video &middot; Halaman {current_page} dari {total_pages}</div>
-<input type="text" id="searchBox" placeholder="Cari judul video atau URL di halaman ini..." onkeyup="filterTable()">
-<div class="search-note">Pencarian hanya berlaku untuk halaman ini. Gunakan navigasi halaman di bawah untuk video lainnya.</div>
+<h1>__SITE_TITLE__</h1>
+<div class="updated">Terakhir diperbarui: __NOW__ &middot; Total __TOTAL__ video</div>
+
+<div class="category-tabs" id="categoryTabs"></div>
+
+<div class="toolbar">
+  <input type="text" id="searchBox" placeholder="Cari judul video atau URL (semua halaman & kategori)...">
+  <button id="themeToggle">Ganti Tema</button>
+</div>
+<div class="search-note">Pencarian berlaku untuk semua data pada kategori yang sedang dipilih.</div>
+
 <table id="urlTable">
-<tr><th>Cover</th><th>Judul Video</th><th>URL</th><th>Status</th></tr>
-{rows_html}
+  <thead>
+    <tr><th>Cover</th><th>Judul Video</th><th>Link Video</th><th>Status Code</th></tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
 </table>
 <div id="noResult" class="no-result" style="display:none;">Tidak ada hasil yang cocok.</div>
-{pagination_html}
+<div id="pagination" class="pagination"></div>
+
+<script type="application/json" id="video-data">__DATA_JSON__</script>
 <script>
-function filterTable() {{
-  var filter = document.getElementById("searchBox").value.toLowerCase();
-  var table = document.getElementById("urlTable");
-  var trs = table.getElementsByTagName("tr");
-  var visibleCount = 0;
+(function () {
+  var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
+  var ITEMS_PER_PAGE = 20;
+  var currentPage = 1;
+  var currentCategory = "Semua";
+  var filtered = ALL_DATA;
 
-  for (var i = 1; i < trs.length; i++) {{
-    var tds = trs[i].getElementsByTagName("td");
-    var text = (tds[1].textContent + " " + tds[2].textContent).toLowerCase();
-    var match = text.indexOf(filter) > -1;
-    trs[i].style.display = match ? "" : "none";
-    if (match) visibleCount++;
-  }}
+  var tableBody = document.getElementById("tableBody");
+  var noResult = document.getElementById("noResult");
+  var paginationEl = document.getElementById("pagination");
+  var searchBox = document.getElementById("searchBox");
+  var themeToggle = document.getElementById("themeToggle");
+  var categoryTabsEl = document.getElementById("categoryTabs");
 
-  document.getElementById("noResult").style.display = visibleCount === 0 ? "block" : "none";
-}}
+  function escapeHtml(str) {
+    var div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function statusClass(status) {
+    var s = String(status);
+    if (/^\d+$/.test(s)) {
+      var n = parseInt(s, 10);
+      if (n >= 200 && n < 300) return "ok";
+      if (n >= 300 && n < 400) return "redirect";
+    }
+    return "fail";
+  }
+
+  function renderRow(item) {
+    var css = statusClass(item.status);
+    var ratioCss = item.rasio === "3:2" ? "3/2" : "16/9";
+    var coverHtml;
+    if (item.cover) {
+      coverHtml = '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" style="aspect-ratio:' + ratioCss + '" ' +
+        'onerror="this.onerror=null;this.src=\'\';this.alt=\'(gagal load)\';this.classList.add(\'broken\')">';
+    } else {
+      coverHtml = '<div class="no-cover-placeholder" style="aspect-ratio:' + ratioCss + '">Tidak ada cover</div>';
+    }
+    return '<tr>' +
+      '<td class="cover-cell">' + coverHtml + '</td>' +
+      '<td>' + escapeHtml(item.judul) + '</td>' +
+      '<td><a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener">' + escapeHtml(item.url) + '</a></td>' +
+      '<td><span class="status ' + css + '">' + escapeHtml(item.status) + '</span></td>' +
+      '</tr>';
+  }
+
+  function renderCategoryTabs() {
+    var categories = ["Semua"];
+    ALL_DATA.forEach(function (item) {
+      if (categories.indexOf(item.kategori) === -1) categories.push(item.kategori);
+    });
+
+    categoryTabsEl.innerHTML = categories.map(function (cat) {
+      var activeClass = cat === currentCategory ? " active" : "";
+      return '<span class="tab' + activeClass + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span>';
+    }).join("");
+
+    categoryTabsEl.querySelectorAll(".tab").forEach(function (el) {
+      el.addEventListener("click", function () {
+        currentCategory = el.getAttribute("data-cat");
+        currentPage = 1;
+        applyFilter();
+        renderCategoryTabs();
+      });
+    });
+  }
+
+  function render() {
+    var totalItems = filtered.length;
+    var totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    var start = (currentPage - 1) * ITEMS_PER_PAGE;
+    var pageItems = filtered.slice(start, start + ITEMS_PER_PAGE);
+
+    if (pageItems.length === 0) {
+      tableBody.innerHTML = "";
+      noResult.style.display = "block";
+    } else {
+      noResult.style.display = "none";
+      tableBody.innerHTML = pageItems.map(renderRow).join("");
+    }
+
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(totalPages) {
+    if (totalPages <= 1) {
+      paginationEl.innerHTML = "";
+      return;
+    }
+    var parts = [];
+    parts.push('<span class="page-link' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</span>');
+    for (var p = 1; p <= totalPages; p++) {
+      parts.push('<span class="page-link' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</span>');
+    }
+    parts.push('<span class="page-link' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</span>');
+    paginationEl.innerHTML = parts.join("\n");
+
+    paginationEl.querySelectorAll(".page-link:not(.disabled)").forEach(function (el) {
+      el.addEventListener("click", function () {
+        currentPage = parseInt(el.getAttribute("data-page"), 10);
+        render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+  }
+
+  function applyFilter() {
+    var q = searchBox.value.trim().toLowerCase();
+
+    filtered = ALL_DATA.filter(function (item) {
+      var matchCategory = currentCategory === "Semua" || item.kategori === currentCategory;
+      var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1 || item.url.toLowerCase().indexOf(q) > -1;
+      return matchCategory && matchSearch;
+    });
+
+    render();
+  }
+
+  searchBox.addEventListener("input", function () {
+    currentPage = 1;
+    applyFilter();
+  });
+
+  // --- Tema (light/dark), disimpan supaya nyaman dipakai lagi ---
+  var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  themeToggle.addEventListener("click", function () {
+    var current = document.documentElement.getAttribute("data-theme");
+    var next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("urlchecker-theme", next);
+  });
+
+  // --- Rasio cover sekarang ditentukan per video lewat kolom RASIO di videos.txt ---
+
+  renderCategoryTabs();
+  render();
+})();
 </script>
 </body>
 </html>
 """
-    return page
-
-
-def cleanup_old_pages(total_pages):
-    """Hapus file page*.html sisa dari run sebelumnya kalau jumlah halaman sekarang lebih sedikit."""
-    for f in glob.glob("page*.html"):
-        m = re.match(r"page(\d+)\.html$", f)
-        if not m:
-            continue
-        page_num = int(m.group(1))
-        if page_num > total_pages:
-            os.remove(f)
-            print(f"Hapus halaman lama yang sudah tidak terpakai: {f}")
-
-
-def write_pages(results):
-    now_str = datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S WIB")
-    total_items = len(results)
-    total_pages = max(1, math.ceil(total_items / ITEMS_PER_PAGE))
-
-    cleanup_old_pages(total_pages)
-
-    for page_num in range(1, total_pages + 1):
-        start = (page_num - 1) * ITEMS_PER_PAGE
-        end = start + ITEMS_PER_PAGE
-        items = results[start:end]
-
-        page_html = render_page(items, page_num, total_pages, now_str, total_items)
-        filename = "index.html" if page_num == 1 else f"page{page_num}.html"
-
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(page_html)
-        print(f"{filename} dibuat ({len(items)} item)")
 
 
 if __name__ == "__main__":
+    cleanup_legacy_pages()
     results = main()
-    write_pages(results)
-    print("Semua halaman berhasil dibuat.")
+    build_html(results)
+    print("Selesai.")
