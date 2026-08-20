@@ -171,7 +171,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .search-container {
     width: 100%;
     max-width: 1000px;
-    margin: 20px auto;
+    margin: 16px auto;
     display: flex;
     gap: 0;
     padding: 0 24px;
@@ -204,7 +204,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   .category-wrapper {
     background: var(--bg);
-    padding: 12px 24px;
+    padding: 16px 24px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -477,7 +477,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     header { padding: 12px 16px; }
     .search-container { padding: 0 16px; margin: 16px auto; }
     .category-wrapper { 
-      padding: 12px 16px; 
+      padding: 16px 16px; 
       flex-direction: column;
       align-items: stretch;
     }
@@ -567,10 +567,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
   var ITEMS_PER_PAGE = 30;
   var currentPage = 1;
-  var currentCategory = null; // null = tampilkan semua (beranda)
+  var currentCategory = null;
   var currentSearch = "";
   var filtered = [];
-  var previousURL = ""; // Simpan URL sebelum modal kebuka
+  var previousURL = "";
 
   var videoGrid = document.getElementById("videoGrid");
   var noResult = document.getElementById("noResult");
@@ -590,7 +590,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     return div.innerHTML;
   }
 
-  // ===== URL PARAMETER SYSTEM =====
   function getParams() {
     var params = new URLSearchParams(window.location.search);
     return {
@@ -603,70 +602,42 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   function updateURL() {
     var params = new URLSearchParams();
-    
-    // Hanya set cat kalau user beneran milih kategori (bukan default null)
-    if (currentCategory) {
-      params.set("cat", currentCategory);
-    }
-    
-    if (currentPage > 1) {
-      params.set("page", currentPage.toString());
-    }
-    
-    if (currentSearch) {
-      params.set("q", currentSearch);
-    }
+    if (currentCategory) params.set("cat", currentCategory);
+    if (currentPage > 1) params.set("page", currentPage.toString());
+    if (currentSearch) params.set("q", currentSearch);
     
     var newUrl = window.location.pathname;
     var queryString = params.toString();
-    if (queryString) {
-      newUrl += "?" + queryString;
-    }
-    
+    if (queryString) newUrl += "?" + queryString;
     window.history.replaceState({}, "", newUrl);
   }
 
   function loadStateFromURL() {
     var params = getParams();
-    
-    // Set kategori dari URL (kalau ada)
     if (params.cat) {
       var validCategories = [];
       ALL_DATA.forEach(function (item) {
         if (validCategories.indexOf(item.kategori) === -1) validCategories.push(item.kategori);
       });
-      
-      if (validCategories.indexOf(params.cat) > -1) {
-        currentCategory = params.cat;
-      }
+      if (validCategories.indexOf(params.cat) > -1) currentCategory = params.cat;
     }
-    // Kalau params.cat null, currentCategory tetap null = tampilkan semua (beranda)
-    
-    if (params.page && params.page > 0) {
-      currentPage = params.page;
-    }
-    
+    if (params.page && params.page > 0) currentPage = params.page;
     if (params.q) {
       currentSearch = params.q;
       searchBox.value = currentSearch;
     }
-
-    // Auto-open modal kalau ada parameter ?play=slug
     if (params.play) {
       var slugToFind = decodeURIComponent(params.play).toLowerCase();
       var videoToPlay = ALL_DATA.find(function (item) {
         return item.slug === slugToFind;
       });
-      
       if (videoToPlay) {
-        // Set kategori video tersebut biar konteksnya bener
         currentCategory = videoToPlay.kategori;
         openVideoPlayer(videoToPlay.url, videoToPlay.judul);
       }
     }
   }
 
-  // Fungsi untuk kembali ke beranda (URL bersih)
   window.goHome = function() {
     currentCategory = null;
     currentSearch = "";
@@ -701,11 +672,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     videoPlayer.src = url;
     videoModal.classList.add("active");
     document.body.style.overflow = "hidden";
-    
-    // Simpan URL sebelumnya
     previousURL = window.location.href;
-    
-    // Update URL jadi ?play=slug (tapi tetap pertahankan parameter lain)
     var params = new URLSearchParams(window.location.search);
     params.set("play", slug || title.toLowerCase().replace(/\s+/g, '-'));
     var newUrl = window.location.pathname + "?" + params.toString();
@@ -716,15 +683,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     videoPlayer.src = "";
     videoModal.classList.remove("active");
     document.body.style.overflow = "";
-    
-    // Restore URL ke sebelumnya (hapus parameter ?play)
     var params = new URLSearchParams(window.location.search);
     params.delete("play");
     var newUrl = window.location.pathname;
     var queryString = params.toString();
-    if (queryString) {
-      newUrl += "?" + queryString;
-    }
+    if (queryString) newUrl += "?" + queryString;
     window.history.replaceState({}, "", newUrl);
   }
 
@@ -739,7 +702,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return;
     }
 
-    // Render tabs (tidak ada yang active kalau currentCategory null = beranda)
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
       return '<span class="tab' + activeClass + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span>';
