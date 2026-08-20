@@ -150,10 +150,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     overflow-x: hidden;
   }
 
+  /* Header: Judul Kiri + Search Kanan */
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
     padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
   }
 
   h1 { 
@@ -162,41 +166,44 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     letter-spacing: -0.5px;
     color: var(--text);
     cursor: pointer;
-    display: inline-block;
-    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   h1:hover { opacity: 0.8; }
 
+  /* Search di dalam header, sebelah kanan */
   .search-container {
-    width: 100%;
-    margin: 8px 0;
+    flex: 1;
     display: flex;
     gap: 0;
-    padding: 0 24px;
+    max-width: 600px;
+    margin-left: auto;
   }
   #searchBox {
     flex: 1;
-    padding: 14px 20px;
+    padding: 10px 16px;
     border: 2px solid var(--border);
     border-right: none;
     border-radius: 0;
-    font-size: 16px;
+    font-size: 14px;
     background: var(--input-bg);
     color: var(--text);
     outline: none;
+    min-width: 0;
   }
   #searchBox:focus { border-color: var(--accent); border-right-color: var(--accent); }
   
   #searchBtn {
-    padding: 14px 28px;
+    padding: 10px 20px;
     border: 2px solid var(--accent);
     border-radius: 0;
     background: var(--accent);
     color: #fff;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
+    flex-shrink: 0;
   }
   #searchBtn:hover { opacity: 0.9; }
 
@@ -472,8 +479,21 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       grid-template-columns: 1fr;
     }
     
-    header { padding: 12px 16px; }
-    .search-container { padding: 0 16px; margin: 8px 0; }
+    /* Mobile: Header jadi 2 baris (judul atas, search bawah) */
+    header { 
+      padding: 12px 16px; 
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    h1 { text-align: center; }
+    .search-container { 
+      max-width: 100%; 
+      margin-left: 0;
+    }
+    #searchBox { padding: 10px 14px; font-size: 14px; }
+    #searchBtn { padding: 10px 18px; font-size: 14px; }
+    
     .category-wrapper { 
       padding: 12px 16px; 
       flex-direction: column;
@@ -525,12 +545,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 <header>
   <h1 onclick="goHome()" title="Klik untuk kembali ke beranda">__SITE_TITLE__</h1>
+  <div class="search-container">
+    <input type="text" id="searchBox" placeholder="Cari video...">
+    <button id="searchBtn">Cari</button>
+  </div>
 </header>
-
-<div class="search-container">
-  <input type="text" id="searchBox" placeholder="Cari video...">
-  <button id="searchBtn">Cari</button>
-</div>
 
 <div class="category-wrapper">
   <button class="burger-btn" id="burgerBtn">☰ Kategori</button>
@@ -651,7 +670,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     ALL_DATA.forEach(function (item) {
       if (categories.indexOf(item.kategori) === -1) categories.push(item.kategori);
     });
-    // Urutkan alphabetically (A-Z)
     categories.sort(function(a, b) {
       return a.toLowerCase().localeCompare(b.toLowerCase());
     });
@@ -714,7 +732,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return;
     }
 
-    // Default ke kategori pertama (alphabetically) kalau belum ada
     if (!currentCategory) {
       currentCategory = categories[0];
     }
