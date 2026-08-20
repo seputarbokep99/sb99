@@ -102,6 +102,7 @@ def build_html(results):
     print(f"index.html dibuat ({total_items} video)")
 
 
+# --- PERBAIKAN CSS DI SINI AGAR RAPAT & NEMPEL ---
 HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
@@ -121,7 +122,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --btn-bg: #ffffff;
     --btn-text: #1565c0;
     --accent: #1565c0;
-    --hover-bg: #f0f0f0;
+    --hover-overlay: rgba(0,0,0,0.1);
   }
   [data-theme="dark"] {
     --bg: #121212;
@@ -135,7 +136,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --btn-bg: #2a2a2a;
     --btn-text: #64b5f6;
     --accent: #64b5f6;
-    --hover-bg: #2c2c2c;
+    --hover-overlay: rgba(255,255,255,0.1);
   }
   
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -148,7 +149,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     display: flex;
     flex-direction: column;
     transition: background 0.3s, color 0.3s;
-    overflow-x: hidden; /* Mencegah scroll horizontal */
+    overflow-x: hidden;
   }
 
   /* Header Area */
@@ -284,6 +285,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-right: none; /* Hapus border kanan agar tidak double */
     border-bottom: none; /* Hapus border bawah agar tidak double */
     height: 100%;
+    position: relative;
   }
   
   /* Tambahkan border kanan untuk kolom terakhir */
@@ -297,9 +299,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
 
   .video-card:hover {
-    background: var(--hover-bg);
     z-index: 1;
     position: relative;
+  }
+  
+  /* Efek hover overlay pada cover */
+  .video-card:hover .cover-container::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--hover-overlay);
+    pointer-events: none;
   }
 
   .cover-container {
@@ -341,6 +351,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     display: flex;
     flex-direction: column;
     border-top: 1px solid var(--border);
+    background: var(--card-bg);
   }
 
   .video-title {
