@@ -13,7 +13,6 @@ SITE_TITLE = "SeputarBokep99"
 
 
 def load_videos(path=DATA_FILE):
-    """Baca daftar video dari file JSON."""
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
@@ -44,7 +43,6 @@ def load_videos(path=DATA_FILE):
 
 
 def check_status(scraper, url):
-    """Cek status HTTP."""
     try:
         timeout = 30 if "vk.ru" in url else 15
         response = scraper.get(url, timeout=timeout)
@@ -81,7 +79,6 @@ def main():
 
 
 def cleanup_legacy_pages():
-    """Hapus file page*.html lama."""
     for f in glob.glob("page*.html"):
         os.remove(f)
         print(f"Hapus file lama: {f}")
@@ -151,6 +148,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     display: flex;
     flex-direction: column;
     transition: background 0.3s, color 0.3s;
+    overflow-x: hidden; /* Mencegah scroll horizontal */
   }
 
   /* Header Area */
@@ -260,34 +258,48 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: var(--accent);
   }
 
-  /* Main Content Grid - FULL WIDTH & RAPAT */
+  /* Main Content Grid - FULL WIDTH TANPA PADDING */
   main {
     flex: 1;
-    padding: 24px;
     width: 100%;
-    max-width: 100%; /* Hapus batasan lebar agar rapat */
+    padding: 0; /* HAPUS PADDING KIRI/KANAN */
+    margin: 0;
   }
 
   .video-grid {
     display: grid;
-    /* Grid otomatis mengisi ruang, minimal 250px per kartu */
+    /* Grid otomatis mengisi lebar penuh, minimal 250px per kartu */
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px; /* Jarak antar kartu */
+    gap: 0; /* HAPUS GAP AGAR RAPAT */
+    width: 100%;
   }
 
   .video-card {
     background: var(--card-bg);
-    border-radius: 12px;
+    border-radius: 0; /* HAPUS BORDER RADIUS AGAR LEBIH KOTAK */
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border);
+    border-right: none; /* Hapus border kanan agar tidak double */
+    border-bottom: none; /* Hapus border bawah agar tidak double */
+    height: 100%;
   }
+  
+  /* Tambahkan border kanan untuk kolom terakhir */
+  .video-card:nth-child(4n) {
+    border-right: 1px solid var(--border);
+  }
+  
+  /* Tambahkan border bawah untuk baris terakhir */
+  .video-card:nth-last-child(-n+4) {
+    border-bottom: 1px solid var(--border);
+  }
+
   .video-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+    background: var(--hover-bg);
+    z-index: 1;
+    position: relative;
   }
 
   .cover-container {
@@ -295,7 +307,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     width: 100%;
     background: var(--header-bg);
     overflow: hidden;
-    display: block; /* Penting agar link mencakup seluruh area gambar */
+    display: block;
     cursor: pointer;
   }
   
@@ -324,14 +336,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
 
   .card-info {
-    padding: 16px;
+    padding: 12px;
     flex: 1;
     display: flex;
     flex-direction: column;
+    border-top: 1px solid var(--border);
   }
 
   .video-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     line-height: 1.4;
     color: var(--text);
@@ -348,7 +361,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--muted);
     font-size: 18px;
     background: var(--card-bg);
-    border-radius: 12px;
     border: 1px dashed var(--border);
   }
 
@@ -358,7 +370,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     justify-content: center;
     gap: 8px;
     margin-top: 40px;
-    padding-bottom: 20px;
+    padding: 20px;
+    background: var(--bg);
   }
   .page-btn {
     padding: 8px 16px;
@@ -390,12 +403,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   @media (max-width: 768px) {
     .video-grid { 
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-      gap: 12px; 
     }
     header { padding: 12px 16px; }
-    main { padding: 16px; }
-    .card-info { padding: 12px; }
-    .video-title { font-size: 14px; }
+    .card-info { padding: 10px; }
+    .video-title { font-size: 13px; }
+    
+    /* Reset border logic untuk mobile */
+    .video-card { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .video-card:nth-child(4n) { border-right: 1px solid var(--border); }
+    .video-card:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
   }
 </style>
 </head>
@@ -462,7 +478,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       coverHtml = '<div class="no-cover">No Cover</div>';
     }
 
-    // Cover sekarang dibungkus <a> tag dan tidak ada link teks di bawahnya
+    // Cover clickable, tidak ada link teks
     var coverLink = '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="cover-container ' + ratioClass + '">' + coverHtml + '</a>';
 
     return '<div class="video-card">' +
