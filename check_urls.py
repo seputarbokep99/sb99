@@ -13,7 +13,6 @@ SITE_TITLE = "SeputarBokep99"
 
 
 def load_videos(path=DATA_FILE):
-    """Baca daftar video dari file JSON."""
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
@@ -44,7 +43,6 @@ def load_videos(path=DATA_FILE):
 
 
 def check_status(scraper, url):
-    """Cek status HTTP."""
     try:
         timeout = 30 if "vk.ru" in url else 15
         response = scraper.get(url, timeout=timeout)
@@ -81,7 +79,6 @@ def main():
 
 
 def cleanup_legacy_pages():
-    """Hapus file page*.html lama."""
     for f in glob.glob("page*.html"):
         os.remove(f)
         print(f"Hapus file lama: {f}")
@@ -154,22 +151,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     overflow-x: hidden;
   }
 
-  /* Header Area */
+  /* Header - Hanya Title */
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
     padding: 16px 24px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  }
-
-  .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
   }
 
   h1 { 
@@ -179,13 +165,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--text);
   }
 
-  /* Search Bar with Button */
+  /* Search Bar dengan Tombol */
   .search-container {
-    position: relative;
     max-width: 800px;
-    margin: 0 auto;
+    margin: 16px auto;
     display: flex;
     gap: 10px;
+    padding: 0 24px;
   }
   #searchBox {
     flex: 1;
@@ -196,39 +182,39 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     background: var(--input-bg);
     color: var(--text);
     outline: none;
-    transition: border-color 0.2s;
   }
   #searchBox:focus { border-color: var(--accent); }
   
   #searchBtn {
-    padding: 0 24px;
-    border: 2px solid var(--accent);
+    padding: 12px 24px;
+    border: none;
     border-radius: 12px;
     background: var(--accent);
     color: #fff;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 0.2s;
     white-space: nowrap;
   }
   #searchBtn:hover { opacity: 0.9; }
 
-  /* Category Tabs & Theme Toggle Wrapper */
+  /* Category Wrapper dengan Toggle */
   .category-wrapper {
     background: var(--bg);
     padding: 12px 24px;
     border-bottom: 1px solid var(--border);
     display: flex;
-    justify-content: space-between; /* Agar tabs di kiri, toggle di kanan */
+    justify-content: space-between;
     align-items: center;
-    overflow-x: auto;
-    white-space: nowrap;
+    flex-wrap: wrap;
+    gap: 12px;
   }
   
   .category-tabs {
     display: flex;
     gap: 10px;
+    flex: 1;
+    overflow-x: auto;
   }
   
   .tab {
@@ -240,8 +226,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    user-select: none;
+    white-space: nowrap;
   }
   .tab:hover { border-color: var(--accent); color: var(--accent); }
   .tab.active {
@@ -250,14 +235,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: var(--accent);
   }
 
-  /* Theme Switch Styling */
+  /* Theme Toggle */
   .theme-switch {
     position: relative;
     display: inline-block;
     width: 44px;
     height: 24px;
-    flex-shrink: 0; /* Agar tidak mengecil */
-    margin-left: 16px;
+    flex-shrink: 0;
   }
   .theme-switch input { opacity: 0; width: 0; height: 0; }
   .theme-slider {
@@ -282,7 +266,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .theme-switch input:checked + .theme-slider { background-color: var(--accent); }
   .theme-switch input:checked + .theme-slider:before { transform: translateX(20px); }
 
-  /* Main Content Grid - FULL WIDTH TANPA PADDING */
+  /* Main Grid - Full Width Rapat */
   main {
     flex: 1;
     width: 100%;
@@ -307,22 +291,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-right: none;
     border-bottom: none;
     height: 100%;
-    position: relative;
   }
   
-  /* Border Logic for Grid */
   .video-card:nth-child(4n) { border-right: 1px solid var(--border); }
   .video-card:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
-
-  .video-card:hover { z-index: 1; }
-  
-  .video-card:hover .cover-container::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.1);
-    pointer-events: none;
-  }
 
   .cover-container {
     position: relative;
@@ -403,7 +375,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: all 0.2s;
   }
   .page-btn:hover:not(.disabled) { background: var(--hover-bg); border-color: var(--accent); }
   .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -424,35 +395,33 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   @media (max-width: 768px) {
     .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
     header { padding: 12px 16px; }
+    .search-container { padding: 0 16px; }
     .card-info { padding: 10px; }
     .video-title { font-size: 13px; }
     
-    /* Reset border logic untuk mobile */
     .video-card { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     .video-card:nth-child(4n) { border-right: 1px solid var(--border); }
     .video-card:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
     
-    .category-wrapper { flex-direction: column; gap: 12px; align-items: flex-start; }
-    .theme-switch { margin-left: 0; align-self: flex-end; }
+    .category-wrapper { flex-direction: column; align-items: stretch; }
+    .category-tabs { justify-content: flex-start; }
+    .theme-switch { align-self: flex-end; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-top">
-    <h1>__SITE_TITLE__</h1>
-    <!-- Toggle theme DIHAPUS dari sini -->
-  </div>
-  <div class="search-container">
-    <input type="text" id="searchBox" placeholder="Cari video...">
-    <button id="searchBtn">Cari</button>
-  </div>
+  <h1>__SITE_TITLE__</h1>
 </header>
+
+<div class="search-container">
+  <input type="text" id="searchBox" placeholder="Cari video...">
+  <button id="searchBtn">Cari</button>
+</div>
 
 <div class="category-wrapper">
   <div class="category-tabs" id="categoryTabs"></div>
-  <!-- Toggle theme DIPINDAH ke sini -->
   <label class="theme-switch">
     <input type="checkbox" id="themeToggle">
     <span class="theme-slider"></span>
@@ -462,7 +431,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <main>
   <div class="video-grid" id="videoGrid"></div>
   <div id="noResult" class="no-result" style="display:none;">Tidak ada video yang cocok.</div>
-  
   <div id="pagination" class="pagination"></div>
 </main>
 
@@ -495,22 +463,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   function createCard(item) {
     var ratioClass = item.rasio === "3:2" ? "ratio-3-2" : "ratio-16-9";
+    var coverHtml = item.cover 
+      ? '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" class="cover-img" onerror="this.onerror=null;this.classList.add(\'broken\');this.alt=\'Error\';">'
+      : '<div class="no-cover">No Cover</div>';
     
-    var coverHtml;
-    if (item.cover) {
-      coverHtml = '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" class="cover-img" ' +
-        'onerror="this.onerror=null;this.classList.add(\'broken\');this.alt=\'Error\';">';
-    } else {
-      coverHtml = '<div class="no-cover">No Cover</div>';
-    }
-
     var coverLink = '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="cover-container ' + ratioClass + '">' + coverHtml + '</a>';
 
     return '<div class="video-card">' +
       coverLink +
-      '<div class="card-info">' +
-        '<div class="video-title">' + escapeHtml(item.judul) + '</div>' +
-      '</div>' +
+      '<div class="card-info"><div class="video-title">' + escapeHtml(item.judul) + '</div></div>' +
     '</div>';
   }
 
@@ -525,9 +486,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return;
     }
 
-    if (!currentCategory && categories.length > 0) {
-      currentCategory = categories[0];
-    }
+    if (!currentCategory && categories.length > 0) currentCategory = categories[0];
 
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
@@ -571,24 +530,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return;
     }
     var parts = [];
-    
     parts.push('<button class="page-btn' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</button>');
     
     var startPage = Math.max(1, currentPage - 2);
     var endPage = Math.min(totalPages, currentPage + 2);
     
     if (startPage > 1) parts.push('<span class="page-btn disabled">...</span>');
-
     for (var p = startPage; p <= endPage; p++) {
       parts.push('<button class="page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>');
     }
-
     if (endPage < totalPages) parts.push('<span class="page-btn disabled">...</span>');
-
     parts.push('<button class="page-btn' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</button>');
 
     paginationEl.innerHTML = parts.join("\n");
-
     paginationEl.querySelectorAll(".page-btn:not(.disabled)").forEach(function (el) {
       el.addEventListener("click", function () {
         currentPage = parseInt(el.getAttribute("data-page"), 10);
@@ -600,23 +554,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   function applyFilter() {
     var q = searchBox.value.trim().toLowerCase();
-
     filtered = ALL_DATA.filter(function (item) {
       var matchCategory = !currentCategory || item.kategori === currentCategory;
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1 || item.url.toLowerCase().indexOf(q) > -1;
       return matchCategory && matchSearch;
     });
-
     render();
   }
 
-  // Event Listener untuk Tombol Cari (BUKAN live search)
+  // Tombol Cari - BUKAN live search
   searchBtn.addEventListener("click", function () {
     currentPage = 1;
     applyFilter();
   });
 
-  // Tetap support Enter key untuk mencari
   searchBox.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
       currentPage = 1;
@@ -624,7 +575,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
   });
 
-  // Theme Logic
+  // Theme
   var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
   themeToggle.checked = savedTheme === "dark";
@@ -634,7 +585,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     localStorage.setItem("urlchecker-theme", next);
   });
 
-  // Init
   renderCategoryTabs();
   applyFilter();
 })();
