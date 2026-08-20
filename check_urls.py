@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 import re
 
 DATA_FILE = "videos.json"
-SITE_TITLE = "SeputarBokep99 💦"
+SITE_TITLE = "SeputarBokep99"
 
 
 def load_videos(path=DATA_FILE):
@@ -39,7 +39,6 @@ def load_videos(path=DATA_FILE):
         if rasio not in ("16:9", "3:2"):
             rasio = "16:9"
 
-        # Generate slug URL-friendly dari judul
         slug = re.sub(r'[^\w\s-]', '', judul.lower())
         slug = re.sub(r'[\s_]+', '-', slug).strip('-')
         slug = re.sub(r'-+', '-', slug)
@@ -154,7 +153,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
-    padding: 16px 24px;
+    padding: 12px 24px;
   }
 
   h1 { 
@@ -170,8 +169,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   .search-container {
     width: 100%;
-    max-width: 1000px;
-    margin: 16px auto;
+    margin: 8px 0;
     display: flex;
     gap: 0;
     padding: 0 24px;
@@ -204,7 +202,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   .category-wrapper {
     background: var(--bg);
-    padding: 16px 24px;
+    padding: 12px 24px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -475,9 +473,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
     
     header { padding: 12px 16px; }
-    .search-container { padding: 0 16px; margin: 16px auto; }
+    .search-container { padding: 0 16px; margin: 8px 0; }
     .category-wrapper { 
-      padding: 16px 16px; 
+      padding: 12px 16px; 
       flex-direction: column;
       align-items: stretch;
     }
@@ -546,7 +544,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </main>
 
 <footer>
-  Dibuat dengan ❤️ dan ☕
+  Copyright @ team 2026
 </footer>
 
 <div class="video-modal" id="videoModal">
@@ -565,7 +563,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 30;
+  var ITEMS_PER_PAGE = 20;
   var currentPage = 1;
   var currentCategory = null;
   var currentSearch = "";
@@ -639,7 +637,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
 
   window.goHome = function() {
-    currentCategory = null;
+    currentCategory = getFirstCategory();
     currentSearch = "";
     currentPage = 1;
     searchBox.value = "";
@@ -647,6 +645,23 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     renderCategoryTabs();
     applyFilter();
   };
+
+  function getSortedCategories() {
+    var categories = [];
+    ALL_DATA.forEach(function (item) {
+      if (categories.indexOf(item.kategori) === -1) categories.push(item.kategori);
+    });
+    // Urutkan alphabetically (A-Z)
+    categories.sort(function(a, b) {
+      return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+    return categories;
+  }
+
+  function getFirstCategory() {
+    var categories = getSortedCategories();
+    return categories.length > 0 ? categories[0] : null;
+  }
 
   function createCard(item) {
     var ratioClass = item.rasio === "3:2" ? "ratio-3-2" : "ratio-16-9";
@@ -692,14 +707,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
 
   function renderCategoryTabs() {
-    var categories = [];
-    ALL_DATA.forEach(function (item) {
-      if (categories.indexOf(item.kategori) === -1) categories.push(item.kategori);
-    });
+    var categories = getSortedCategories();
 
     if (categories.length === 0) {
       categoryTabsEl.parentElement.style.display = 'none';
       return;
+    }
+
+    // Default ke kategori pertama (alphabetically) kalau belum ada
+    if (!currentCategory) {
+      currentCategory = categories[0];
     }
 
     categoryTabsEl.innerHTML = categories.map(function (cat) {
