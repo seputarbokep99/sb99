@@ -7,13 +7,13 @@ import glob
 import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import re
 
 DATA_FILE = "videos.json"
 SITE_TITLE = "SeputarBokep99 💦"
 
 
 def load_videos(path=DATA_FILE):
-    """Baca daftar video dari file JSON."""
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
@@ -33,26 +33,31 @@ def load_videos(path=DATA_FILE):
         judul = str(entry.get("judul", "")).strip() or "(Tanpa Judul)"
         cover = str(entry.get("cover", "")).strip()
         kategori = str(entry.get("kategori", "")).strip() or "Lainnya"
-        durasi = str(entry.get("durasi", "")).strip() # <-- TAMBAHAN: Baca durasi
+        durasi = str(entry.get("durasi", "")).strip()
 
         rasio = str(entry.get("rasio", "")).strip().replace(" ", "")
         if rasio not in ("16:9", "3:2"):
             rasio = "16:9"
 
+        # Generate slug URL-friendly dari judul
+        slug = re.sub(r'[^\w\s-]', '', judul.lower())
+        slug = re.sub(r'[\s_]+', '-', slug).strip('-')
+        slug = re.sub(r'-+', '-', slug)
+
         videos.append({
-            "url": url, 
-            "judul": judul, 
-            "cover": cover, 
-            "kategori": kategori, 
+            "url": url,
+            "judul": judul,
+            "cover": cover,
+            "kategori": kategori,
             "rasio": rasio,
-            "durasi": durasi # <-- TAMBAHAN: Simpan durasi
+            "durasi": durasi,
+            "slug": slug
         })
 
     return videos
 
 
 def check_status(scraper, url):
-    """Cek status HTTP."""
     try:
         timeout = 30 if "vk.ru" in url else 15
         response = scraper.get(url, timeout=timeout)
@@ -89,7 +94,6 @@ def main():
 
 
 def cleanup_legacy_pages():
-    """Hapus file page*.html lama."""
     for f in glob.glob("page*.html"):
         os.remove(f)
         print(f"Hapus file lama: {f}")
@@ -308,7 +312,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     background: var(--header-bg);
   }
 
-  /* ===== BADGE DURASI DI POJOK KANAN BAWAH ===== */
   .duration-badge {
     position: absolute;
     bottom: 8px;
@@ -319,7 +322,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 12px;
     font-weight: 600;
     border-radius: 4px;
-    pointer-events: none; /* Agar klik tembus ke cover */
+    pointer-events: none;
     z-index: 2;
     letter-spacing: 0.5px;
   }
@@ -386,7 +389,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     cursor: not-allowed;
   }
 
-  /* Video Modal */
   .video-modal {
     display: none;
     position: fixed;
@@ -524,7 +526,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <body>
 
 <header>
-  <h1 onclick="location.reload()" title="Klik untuk kembali ke beranda">__SITE_TITLE__</h1>
+  <h1 onclick="goHome()" title="Klik untuk kembali ke beranda">__SITE_TITLE__</h1>
 </header>
 
 <div class="search-container">
@@ -565,9 +567,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
   var ITEMS_PER_PAGE = 30;
   var currentPage = 1;
-  var currentCategory = null;
+  var currentCategory = null; // null = tampilkan semua (beranda)
   var currentSearch = "";
   var filtered = [];
+  var previousURL = ""; // Simpan URL sebelum modal kebuka
 
   var videoGrid = document.getElementById("videoGrid");
   var noResult = document.getElementById("noResult");
@@ -593,37 +596,86 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     return {
       cat: params.get("cat") || null,
       page: parseInt(params.get("page")) || 1,
-      q: params.get("q") || ""
+      q: params.get("q") || "",
+      play: params.get("play") || null
     };
   }
 
   function updateURL() {
     var params = new URLSearchParams();
-    if (currentCategory) params.set("cat", currentCategory);
-    if (currentPage > 1) params.set("page", currentPage.toString());
-    if (currentSearch) params.set("q", currentSearch);
+    
+    // Hanya set cat kalau user beneran milih kategori (bukan default null)
+    if (currentCategory) {
+      params.set("cat", currentCategory);
+    }
+    
+    if (currentPage > 1) {
+      params.set("page", currentPage.toString());
+    }
+    
+    if (currentSearch) {
+      params.set("q", currentSearch);
+    }
     
     var newUrl = window.location.pathname;
     var queryString = params.toString();
-    if (queryString) newUrl += "?" + queryString;
+    if (queryString) {
+      newUrl += "?" + queryString;
+    }
+    
     window.history.replaceState({}, "", newUrl);
   }
 
   function loadStateFromURL() {
     var params = getParams();
+    
+    // Set kategori dari URL (kalau ada)
     if (params.cat) {
       var validCategories = [];
       ALL_DATA.forEach(function (item) {
         if (validCategories.indexOf(item.kategori) === -1) validCategories.push(item.kategori);
       });
-      if (validCategories.indexOf(params.cat) > -1) currentCategory = params.cat;
+      
+      if (validCategories.indexOf(params.cat) > -1) {
+        currentCategory = params.cat;
+      }
     }
-    if (params.page && params.page > 0) currentPage = params.page;
+    // Kalau params.cat null, currentCategory tetap null = tampilkan semua (beranda)
+    
+    if (params.page && params.page > 0) {
+      currentPage = params.page;
+    }
+    
     if (params.q) {
       currentSearch = params.q;
       searchBox.value = currentSearch;
     }
+
+    // Auto-open modal kalau ada parameter ?play=slug
+    if (params.play) {
+      var slugToFind = decodeURIComponent(params.play).toLowerCase();
+      var videoToPlay = ALL_DATA.find(function (item) {
+        return item.slug === slugToFind;
+      });
+      
+      if (videoToPlay) {
+        // Set kategori video tersebut biar konteksnya bener
+        currentCategory = videoToPlay.kategori;
+        openVideoPlayer(videoToPlay.url, videoToPlay.judul);
+      }
+    }
   }
+
+  // Fungsi untuk kembali ke beranda (URL bersih)
+  window.goHome = function() {
+    currentCategory = null;
+    currentSearch = "";
+    currentPage = 1;
+    searchBox.value = "";
+    window.history.replaceState({}, "", window.location.pathname);
+    renderCategoryTabs();
+    applyFilter();
+  };
 
   function createCard(item) {
     var ratioClass = item.rasio === "3:2" ? "ratio-3-2" : "ratio-16-9";
@@ -631,10 +683,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       ? '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" class="cover-img" onerror="this.onerror=null;this.classList.add(\'broken\');this.alt=\'Error\';">'
       : '<div class="no-cover">No Cover</div>';
     
-    // Tambahkan badge durasi jika ada
     var durationHtml = item.durasi ? '<div class="duration-badge">' + escapeHtml(item.durasi) + '</div>' : '';
     
-    var coverLink = '<div class="cover-container ' + ratioClass + '" data-url="' + escapeHtml(item.url) + '" data-title="' + escapeHtml(item.judul) + '">' + 
+    var coverLink = '<div class="cover-container ' + ratioClass + '" data-url="' + escapeHtml(item.url) + '" data-title="' + escapeHtml(item.judul) + '" data-slug="' + escapeHtml(item.slug) + '">' + 
       coverHtml + 
       durationHtml + 
     '</div>';
@@ -645,17 +696,36 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     '</div>';
   }
 
-  function openVideoPlayer(url, title) {
+  function openVideoPlayer(url, title, slug) {
     modalTitle.textContent = title;
     videoPlayer.src = url;
     videoModal.classList.add("active");
     document.body.style.overflow = "hidden";
+    
+    // Simpan URL sebelumnya
+    previousURL = window.location.href;
+    
+    // Update URL jadi ?play=slug (tapi tetap pertahankan parameter lain)
+    var params = new URLSearchParams(window.location.search);
+    params.set("play", slug || title.toLowerCase().replace(/\s+/g, '-'));
+    var newUrl = window.location.pathname + "?" + params.toString();
+    window.history.replaceState({}, "", newUrl);
   }
 
   function closeVideoPlayer() {
     videoPlayer.src = "";
     videoModal.classList.remove("active");
     document.body.style.overflow = "";
+    
+    // Restore URL ke sebelumnya (hapus parameter ?play)
+    var params = new URLSearchParams(window.location.search);
+    params.delete("play");
+    var newUrl = window.location.pathname;
+    var queryString = params.toString();
+    if (queryString) {
+      newUrl += "?" + queryString;
+    }
+    window.history.replaceState({}, "", newUrl);
   }
 
   function renderCategoryTabs() {
@@ -669,8 +739,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return;
     }
 
-    if (!currentCategory && categories.length > 0) currentCategory = categories[0];
-
+    // Render tabs (tidak ada yang active kalau currentCategory null = beranda)
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
       return '<span class="tab' + activeClass + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span>';
@@ -709,7 +778,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         el.addEventListener("click", function () {
           var url = el.getAttribute("data-url");
           var title = el.getAttribute("data-title");
-          openVideoPlayer(url, title);
+          var slug = el.getAttribute("data-slug");
+          openVideoPlayer(url, title, slug);
         });
       });
     }
