@@ -2,8 +2,11 @@ name: Check URL Status
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # tiap 30 menit
+    - cron: '*/30 * * * *' # otomatis jalan tiap 30 menit
   workflow_dispatch: {} # bisa dijalankan manual dari tab Actions
+  push:
+    branches:
+      - main # otomatis jalan setiap ada push/commit file apa aja di branch main
 
 permissions:
   contents: write # wajib, biar job ini boleh push balik ke repo
