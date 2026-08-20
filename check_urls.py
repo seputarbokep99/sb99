@@ -9,7 +9,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 DATA_FILE = "videos.json"
-SITE_TITLE = "SeputarBokep99"
+SITE_TITLE = "Arsip Video Saya"  # ganti di sini kalau mau ubah nama halaman
+
 
 def load_videos(path=DATA_FILE):
     """Baca daftar video dari file JSON. Tiap entri wajib punya 'url', field lain opsional."""
@@ -71,15 +72,17 @@ def main():
 
     for v in videos:
         status = check_status(scraper, v["url"])
-        print(f"Cek: {v['url']} -> [{v['judul']}] ({v['kategori']}) -> {status}")
-        results.append({
-            "judul": v["judul"],
-            "url": v["url"],
-            "cover": v["cover"],
-            "kategori": v["kategori"],
-            "rasio": v["rasio"],
-            "status": str(status),
-        })
+        if status == 200:
+            print(f"Cek: {v['url']} -> [{v['judul']}] ({v['kategori']}) -> {status} (DITAMPILKAN)")
+            results.append({
+                "judul": v["judul"],
+                "url": v["url"],
+                "cover": v["cover"],
+                "kategori": v["kategori"],
+                "rasio": v["rasio"],
+            })
+        else:
+            print(f"Cek: {v['url']} -> [{v['judul']}] ({v['kategori']}) -> {status} (DISEMBUNYIKAN, bukan 200)")
         time.sleep(1)  # jeda kecil antar-request biar nggak keliatan kayak burst bot
 
     return results
@@ -182,13 +185,59 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 13px;
     cursor: pointer;
   }
+
+  .theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .theme-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--border);
+    border-radius: 999px;
+    transition: background 0.2s;
+  }
+  .theme-slider::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .theme-switch input:checked + .theme-slider {
+    background: var(--accent);
+  }
+  .theme-switch input:checked + .theme-slider::before {
+    transform: translateX(20px);
+  }
   .search-note { color: var(--muted); font-size: 12px; margin: -6px 0 16px; }
 
+  .category-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
   .category-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 16px;
   }
   .tab {
     padding: 8px 18px;
@@ -244,19 +293,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     text-align: center;
   }
 
-  .status {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-weight: bold;
-    font-size: 13px;
-    color: #fff;
-    white-space: nowrap;
-  }
-  .ok { background: #2e7d32; }
-  .redirect { background: #f9a825; }
-  .fail { background: #c62828; }
-
   .no-result { text-align: center; color: var(--muted); padding: 24px; background: var(--card-bg); }
 
   .pagination {
@@ -285,16 +321,22 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <h1>__SITE_TITLE__</h1>
 <div class="updated">Terakhir diperbarui: __NOW__ &middot; Total __TOTAL__ video</div>
 
-<div class="category-tabs" id="categoryTabs"></div>
+<div class="category-row">
+  <div class="category-tabs" id="categoryTabs"></div>
+  <label class="theme-switch">
+    <input type="checkbox" id="themeToggle">
+    <span class="theme-slider"></span>
+  </label>
+</div>
 
 <div class="toolbar">
-  <input type="text" id="searchBox" placeholder="Cari judul video atau URL (semua halaman & kategori)...">
-  <button id="themeToggle">Ganti Tema</button>
+  <input type="text" id="searchBox" placeholder="Cari judul video atau URL...">
+  <button id="searchBtn">Cari</button>
 </div>
 
 <table id="urlTable">
   <thead>
-    <tr><th>Cover</th><th>Judul Video</th><th>Link Video</th><th>Status Code</th></tr>
+    <tr><th>Cover</th><th>Judul Video</th><th>Link Video</th></tr>
   </thead>
   <tbody id="tableBody"></tbody>
 </table>
@@ -314,6 +356,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   var noResult = document.getElementById("noResult");
   var paginationEl = document.getElementById("pagination");
   var searchBox = document.getElementById("searchBox");
+  var searchBtn = document.getElementById("searchBtn");
   var themeToggle = document.getElementById("themeToggle");
   var categoryTabsEl = document.getElementById("categoryTabs");
 
@@ -323,18 +366,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     return div.innerHTML;
   }
 
-  function statusClass(status) {
-    var s = String(status);
-    if (/^\d+$/.test(s)) {
-      var n = parseInt(s, 10);
-      if (n >= 200 && n < 300) return "ok";
-      if (n >= 300 && n < 400) return "redirect";
-    }
-    return "fail";
-  }
-
   function renderRow(item) {
-    var css = statusClass(item.status);
     var ratioCss = item.rasio === "3:2" ? "3/2" : "16/9";
     var coverHtml;
     if (item.cover) {
@@ -346,8 +378,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     return '<tr>' +
       '<td class="cover-cell">' + coverHtml + '</td>' +
       '<td>' + escapeHtml(item.judul) + '</td>' +
-      '<td><a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener">' + escapeHtml(item.url) + '</a></td>' +
-      '<td><span class="status ' + css + '">' + escapeHtml(item.status) + '</span></td>' +
+      '<td><a href="' + escapeHtml(item.url) + '">' + escapeHtml(item.url) + '</a></td>' +
       '</tr>';
   }
 
@@ -426,17 +457,24 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     render();
   }
 
-  searchBox.addEventListener("input", function () {
+  searchBtn.addEventListener("click", function () {
     currentPage = 1;
     applyFilter();
   });
 
-  // --- Tema (light/dark), disimpan supaya nyaman dipakai lagi ---
+  searchBox.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      currentPage = 1;
+      applyFilter();
+    }
+  });
+
+  // --- Tema (light/dark) via toggle switch, disimpan supaya nyaman dipakai lagi ---
   var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
-  themeToggle.addEventListener("click", function () {
-    var current = document.documentElement.getAttribute("data-theme");
-    var next = current === "dark" ? "light" : "dark";
+  themeToggle.checked = savedTheme === "dark";
+  themeToggle.addEventListener("change", function () {
+    var next = themeToggle.checked ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("urlchecker-theme", next);
   });
