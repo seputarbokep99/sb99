@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SeputarBokep99</title>
+<title>Arsip Video Saya</title>
 <style>
   :root {
     --bg: #f5f5f5;
@@ -70,13 +70,59 @@
     font-size: 13px;
     cursor: pointer;
   }
+
+  .theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .theme-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--border);
+    border-radius: 999px;
+    transition: background 0.2s;
+  }
+  .theme-slider::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .theme-switch input:checked + .theme-slider {
+    background: var(--accent);
+  }
+  .theme-switch input:checked + .theme-slider::before {
+    transform: translateX(20px);
+  }
   .search-note { color: var(--muted); font-size: 12px; margin: -6px 0 16px; }
 
+  .category-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
   .category-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 16px;
   }
   .tab {
     padding: 8px 18px;
@@ -132,19 +178,6 @@
     text-align: center;
   }
 
-  .status {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-weight: bold;
-    font-size: 13px;
-    color: #fff;
-    white-space: nowrap;
-  }
-  .ok { background: #2e7d32; }
-  .redirect { background: #f9a825; }
-  .fail { background: #c62828; }
-
   .no-result { text-align: center; color: var(--muted); padding: 24px; background: var(--card-bg); }
 
   .pagination {
@@ -170,26 +203,32 @@
 </style>
 </head>
 <body>
-<h1>SeputarBokep99</h1>
-<div class="updated">Terakhir diperbarui: 2026-08-20 08:24:46 WIB &middot; Total 7 video</div>
+<h1>Arsip Video Saya</h1>
+<div class="updated">Terakhir diperbarui: 2026-08-20 08:32:24 WIB &middot; Total 7 video</div>
 
-<div class="category-tabs" id="categoryTabs"></div>
+<div class="category-row">
+  <div class="category-tabs" id="categoryTabs"></div>
+  <label class="theme-switch">
+    <input type="checkbox" id="themeToggle">
+    <span class="theme-slider"></span>
+  </label>
+</div>
 
 <div class="toolbar">
-  <input type="text" id="searchBox" placeholder="Cari judul video atau URL (semua halaman & kategori)...">
-  <button id="themeToggle">Ganti Tema</button>
+  <input type="text" id="searchBox" placeholder="Cari judul video atau URL...">
+  <button id="searchBtn">Cari</button>
 </div>
 
 <table id="urlTable">
   <thead>
-    <tr><th>Cover</th><th>Judul Video</th><th>Link Video</th><th>Status Code</th></tr>
+    <tr><th>Cover</th><th>Judul Video</th><th>Link Video</th></tr>
   </thead>
   <tbody id="tableBody"></tbody>
 </table>
 <div id="noResult" class="no-result" style="display:none;">Tidak ada hasil yang cocok.</div>
 <div id="pagination" class="pagination"></div>
 
-<script type="application/json" id="video-data">[{"judul": "[UN] MIDA-742 - Himari", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239157&hash=84132aa3098a56a0", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00742pl.w800.png", "kategori": "Bokep Jepang", "rasio": "3:2", "status": "200"}, {"judul": "[UN] PRED-884 - Yui Hatano", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239146&hash=63a7975f718b4d28", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/pred00884pl.w800.png", "kategori": "Bokep Jepang", "rasio": "3:2", "status": "200"}, {"judul": "[UN] MNGS-078 - Moka Haruhi", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239147&hash=4be75799c84547c2", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mngs00078pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2", "status": "200"}, {"judul": "[UN] MIDA-499 - Rikka Ono", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239148&hash=4ea1e114c658a8fa", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00499pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2", "status": "200"}, {"judul": "[UN] DSOD-001 - Waka Misono", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239149&hash=2b50195ffc1402ed", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/dsod00001pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2", "status": "200"}, {"judul": "[UN] PKPD-430 - Runa Amane", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239159&hash=d96f9009be51949e", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/pkpd00430pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2", "status": "200"}, {"judul": "[UN] JYMA-100 - Shiori Tsukata", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239160&hash=2e6f29a82ff8e202", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/jyma00100pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2", "status": "200"}]</script>
+<script type="application/json" id="video-data">[{"judul": "[UN] MIDA-742 - Himari", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239157&hash=84132aa3098a56a0", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00742pl.w800.png", "kategori": "Bokep Jepang", "rasio": "3:2"}, {"judul": "[UN] PRED-884 - Yui Hatano", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239146&hash=63a7975f718b4d28", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/pred00884pl.w800.png", "kategori": "Bokep Jepang", "rasio": "3:2"}, {"judul": "[UN] MNGS-078 - Moka Haruhi", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239147&hash=4be75799c84547c2", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mngs00078pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2"}, {"judul": "[UN] MIDA-499 - Rikka Ono", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239148&hash=4ea1e114c658a8fa", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00499pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2"}, {"judul": "[UN] DSOD-001 - Waka Misono", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239149&hash=2b50195ffc1402ed", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/dsod00001pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2"}, {"judul": "[UN] PKPD-430 - Runa Amane", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239159&hash=d96f9009be51949e", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/pkpd00430pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2"}, {"judul": "[UN] JYMA-100 - Shiori Tsukata", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239160&hash=2e6f29a82ff8e202", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/jyma00100pl.w800.jpg", "kategori": "Bokep Jepang", "rasio": "3:2"}]</script>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
@@ -202,6 +241,7 @@
   var noResult = document.getElementById("noResult");
   var paginationEl = document.getElementById("pagination");
   var searchBox = document.getElementById("searchBox");
+  var searchBtn = document.getElementById("searchBtn");
   var themeToggle = document.getElementById("themeToggle");
   var categoryTabsEl = document.getElementById("categoryTabs");
 
@@ -211,18 +251,7 @@
     return div.innerHTML;
   }
 
-  function statusClass(status) {
-    var s = String(status);
-    if (/^\d+$/.test(s)) {
-      var n = parseInt(s, 10);
-      if (n >= 200 && n < 300) return "ok";
-      if (n >= 300 && n < 400) return "redirect";
-    }
-    return "fail";
-  }
-
   function renderRow(item) {
-    var css = statusClass(item.status);
     var ratioCss = item.rasio === "3:2" ? "3/2" : "16/9";
     var coverHtml;
     if (item.cover) {
@@ -234,8 +263,7 @@
     return '<tr>' +
       '<td class="cover-cell">' + coverHtml + '</td>' +
       '<td>' + escapeHtml(item.judul) + '</td>' +
-      '<td><a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener">' + escapeHtml(item.url) + '</a></td>' +
-      '<td><span class="status ' + css + '">' + escapeHtml(item.status) + '</span></td>' +
+      '<td><a href="' + escapeHtml(item.url) + '">' + escapeHtml(item.url) + '</a></td>' +
       '</tr>';
   }
 
@@ -314,17 +342,24 @@
     render();
   }
 
-  searchBox.addEventListener("input", function () {
+  searchBtn.addEventListener("click", function () {
     currentPage = 1;
     applyFilter();
   });
 
-  // --- Tema (light/dark), disimpan supaya nyaman dipakai lagi ---
+  searchBox.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      currentPage = 1;
+      applyFilter();
+    }
+  });
+
+  // --- Tema (light/dark) via toggle switch, disimpan supaya nyaman dipakai lagi ---
   var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
-  themeToggle.addEventListener("click", function () {
-    var current = document.documentElement.getAttribute("data-theme");
-    var next = current === "dark" ? "light" : "dark";
+  themeToggle.checked = savedTheme === "dark";
+  themeToggle.addEventListener("change", function () {
+    var next = themeToggle.checked ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("urlchecker-theme", next);
   });
