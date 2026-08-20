@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 import re
 
 DATA_FILE = "videos.json"
-SITE_TITLE = "SeputarBokep99"
+SITE_TITLE = "SeputarBokep99 💦"
 
 
 def load_videos(path=DATA_FILE):
@@ -563,7 +563,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </main>
 
 <footer>
-  Copyright @ team 2026
+  Dibuat dengan ❤️ dan ☕
 </footer>
 
 <div class="video-modal" id="videoModal">
@@ -582,7 +582,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 20;
+  var ITEMS_PER_PAGE = 30;
   var currentPage = 1;
   var currentCategory = null;
   var currentSearch = "";
