@@ -136,7 +136,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     overflow-x: hidden;
   }
 
-  /* Header dengan Title Clickable */
+  /* Header */
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
@@ -154,7 +154,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   h1:hover { opacity: 0.8; }
 
-  /* Search Bar - KOTAK & PANJANG */
+  /* Search Bar */
   .search-container {
     width: 100%;
     max-width: 1000px;
@@ -189,7 +189,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   #searchBtn:hover { opacity: 0.9; }
 
-  /* Category Wrapper - Tab KOTAK */
+  /* Category Wrapper */
   .category-wrapper {
     background: var(--bg);
     padding: 12px 24px;
@@ -226,11 +226,26 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: var(--accent);
   }
 
-  /* Main Grid - ADA PADDING agar sejajar dengan kategori */
+  /* Burger Button - Hidden di desktop */
+  .burger-btn {
+    display: none;
+    padding: 10px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .burger-btn:hover { background: var(--hover-bg); }
+
+  /* Main Grid - Padding konsisten semua sisi */
   main {
     flex: 1;
     width: 100%;
-    padding: 24px; /* Padding sama dengan header & category */
+    padding: 24px; /* Sama atas, bawah, kiri, kanan */
     margin: 0;
   }
 
@@ -317,31 +332,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border: 1px dashed var(--border);
   }
 
-  /* Pagination - Tombol KOTAK */
-  .pagination {
-    display: flex;
-    justify-content: center;
-    gap: 0;
-    margin-top: 40px;
-    padding: 20px;
-    background: var(--bg);
-  }
-  .page-btn {
-    padding: 10px 18px;
-    border-radius: 0;
-    background: var(--card-bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-right: none;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .page-btn:last-child { border-right: 1px solid var(--border); }
-  .page-btn:hover:not(.disabled) { background: var(--hover-bg); }
-  .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .page-btn.disabled { opacity: 0.5; cursor: not-allowed; }
-
   /* Footer */
   footer {
     background: var(--card-bg);
@@ -353,22 +343,44 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     margin-top: auto;
   }
 
-  /* Responsive */
+  /* Responsive - Mobile & Tablet */
   @media (max-width: 768px) {
-    .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    .video-grid { 
+      grid-template-columns: 1fr; /* 1 card per baris seperti YT */
+    }
+    
     header { padding: 12px 16px; }
-    .search-container { padding: 0 16px; }
-    .category-wrapper { padding: 12px 16px; }
-    main { padding: 16px; }
-    .card-info { padding: 10px; }
-    .video-title { font-size: 13px; }
+    .search-container { padding: 0 16px; margin: 16px auto; }
+    .category-wrapper { 
+      padding: 12px 16px; 
+      flex-direction: column;
+      align-items: stretch;
+    }
+    main { padding: 16px; } /* Konsisten dengan header */
+    .card-info { padding: 12px; }
+    .video-title { font-size: 14px; }
+    
+    /* Burger button muncul di mobile */
+    .burger-btn { display: block; margin-bottom: 0; }
+    
+    /* Category tabs jadi dropdown di mobile */
+    .category-tabs {
+      display: none;
+      flex-direction: column;
+      margin-top: 8px;
+    }
+    .category-tabs.open {
+      display: flex;
+    }
+    .tab {
+      border-right: 1px solid var(--border);
+      border-bottom: none;
+    }
+    .tab:last-child { border-bottom: 1px solid var(--border); }
     
     .video-card { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     .video-card:nth-child(4n) { border-right: 1px solid var(--border); }
     .video-card:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
-    
-    .tab { border-right: 1px solid var(--border); }
-    .page-btn { border-right: 1px solid var(--border); }
   }
 </style>
 </head>
@@ -384,13 +396,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </div>
 
 <div class="category-wrapper">
+  <button class="burger-btn" id="burgerBtn"> Kategori</button>
   <div class="category-tabs" id="categoryTabs"></div>
 </div>
 
 <main>
   <div class="video-grid" id="videoGrid"></div>
   <div id="noResult" class="no-result" style="display:none;">Tidak ada video yang cocok.</div>
-  <div id="pagination" class="pagination"></div>
 </main>
 
 <footer>
@@ -401,17 +413,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 20;
-  var currentPage = 1;
   var currentCategory = null;
   var filtered = [];
 
   var videoGrid = document.getElementById("videoGrid");
   var noResult = document.getElementById("noResult");
-  var paginationEl = document.getElementById("pagination");
   var searchBox = document.getElementById("searchBox");
   var searchBtn = document.getElementById("searchBtn");
   var categoryTabsEl = document.getElementById("categoryTabs");
+  var burgerBtn = document.getElementById("burgerBtn");
 
   function escapeHtml(str) {
     var div = document.createElement("div");
@@ -454,84 +464,52 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     categoryTabsEl.querySelectorAll(".tab").forEach(function (el) {
       el.addEventListener("click", function () {
         currentCategory = el.getAttribute("data-cat");
-        currentPage = 1;
         applyFilter();
         renderCategoryTabs();
+        // Tutup menu burger setelah pilih kategori (mobile)
+        categoryTabsEl.classList.remove("open");
       });
     });
   }
 
   function render() {
-    var totalItems = filtered.length;
-    var totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
-    
-    if (currentPage > totalPages) currentPage = totalPages;
-    if (currentPage < 1) currentPage = 1;
-
-    var start = (currentPage - 1) * ITEMS_PER_PAGE;
-    var pageItems = filtered.slice(start, start + ITEMS_PER_PAGE);
-
-    if (pageItems.length === 0) {
+    if (filtered.length === 0) {
       videoGrid.innerHTML = "";
       noResult.style.display = "block";
     } else {
       noResult.style.display = "none";
-      videoGrid.innerHTML = pageItems.map(createCard).join("");
+      videoGrid.innerHTML = filtered.map(createCard).join("");
     }
-
-    renderPagination(totalPages);
-  }
-
-  function renderPagination(totalPages) {
-    if (totalPages <= 1) {
-      paginationEl.innerHTML = "";
-      return;
-    }
-    var parts = [];
-    parts.push('<button class="page-btn' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</button>');
-    
-    var startPage = Math.max(1, currentPage - 2);
-    var endPage = Math.min(totalPages, currentPage + 2);
-    
-    if (startPage > 1) parts.push('<span class="page-btn disabled">...</span>');
-    for (var p = startPage; p <= endPage; p++) {
-      parts.push('<button class="page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>');
-    }
-    if (endPage < totalPages) parts.push('<span class="page-btn disabled">...</span>');
-    parts.push('<button class="page-btn' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</button>');
-
-    paginationEl.innerHTML = parts.join("\n");
-    paginationEl.querySelectorAll(".page-btn:not(.disabled)").forEach(function (el) {
-      el.addEventListener("click", function () {
-        currentPage = parseInt(el.getAttribute("data-page"), 10);
-        render();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
-    });
   }
 
   function applyFilter() {
     var q = searchBox.value.trim().toLowerCase();
     filtered = ALL_DATA.filter(function (item) {
       var matchCategory = !currentCategory || item.kategori === currentCategory;
-      var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1 || item.url.toLowerCase().indexOf(q) > -1;
+      // CARI HANYA BERDASARKAN JUDUL
+      var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1;
       return matchCategory && matchSearch;
     });
     render();
   }
 
+  // Tombol Cari
   searchBtn.addEventListener("click", function () {
-    currentPage = 1;
     applyFilter();
   });
 
   searchBox.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
-      currentPage = 1;
       applyFilter();
     }
   });
 
+  // Burger Menu Toggle (mobile)
+  burgerBtn.addEventListener("click", function () {
+    categoryTabsEl.classList.toggle("open");
+  });
+
+  // Init
   renderCategoryTabs();
   applyFilter();
 })();
