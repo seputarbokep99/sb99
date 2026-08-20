@@ -9,7 +9,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 DATA_FILE = "videos.json"
-SITE_TITLE = "SeputarBokep99"
+SITE_TITLE = "SeputarBokep99 💦"
 
 
 def load_videos(path=DATA_FILE):
@@ -448,7 +448,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </main>
 
 <footer>
-  Copyright @ team 2026
+  Dibuat dengan ❤️ dan ☕
 </footer>
 
 <script type="application/json" id="video-data">__DATA_JSON__</script>
