@@ -1,25 +1,11 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light">
+<html lang="id" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SeputarBokep99</title>
 <style>
   :root {
-    --bg: #f5f5f5;
-    --card-bg: #ffffff;
-    --text: #1a1a1a;
-    --muted: #666666;
-    --border: #e0e0e0;
-    --header-bg: #fafafa;
-    --link: #1565c0;
-    --input-bg: #ffffff;
-    --btn-bg: #ffffff;
-    --btn-text: #1565c0;
-    --accent: #1565c0;
-    --hover-bg: #f0f0f0;
-  }
-  [data-theme="dark"] {
     --bg: #121212;
     --card-bg: #1e1e1e;
     --text: #e8e8e8;
@@ -43,18 +29,14 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    transition: background 0.3s, color 0.3s;
     overflow-x: hidden;
   }
 
-  /* Header dengan Title + Toggle Theme */
+  /* Header dengan Title Clickable */
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
     padding: 16px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
   }
 
   h1 { 
@@ -62,54 +44,27 @@
     font-weight: 800; 
     letter-spacing: -0.5px;
     color: var(--text);
-  }
-
-  /* Theme Toggle di Header */
-  .theme-switch {
-    position: relative;
-    display: inline-block;
-    width: 44px;
-    height: 24px;
-    flex-shrink: 0;
-  }
-  .theme-switch input { opacity: 0; width: 0; height: 0; }
-  .theme-slider {
-    position: absolute;
     cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: var(--border);
-    border-radius: 34px;
-    transition: .4s;
+    display: inline-block;
+    text-decoration: none;
   }
-  .theme-slider:before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    border-radius: 50%;
-    transition: .4s;
-  }
-  .theme-switch input:checked + .theme-slider { background-color: var(--accent); }
-  .theme-switch input:checked + .theme-slider:before { transform: translateX(20px); }
+  h1:hover { opacity: 0.8; }
 
   /* Search Bar - KOTAK & PANJANG */
   .search-container {
     width: 100%;
-    max-width: 1000px; /* Lebih panjang */
+    max-width: 1000px;
     margin: 20px auto;
     display: flex;
-    gap: 0; /* Tanpa gap, nempel */
+    gap: 0;
     padding: 0 24px;
   }
   #searchBox {
     flex: 1;
     padding: 14px 20px;
     border: 2px solid var(--border);
-    border-right: none; /* Nempel dengan tombol */
-    border-radius: 0; /* KOTAK */
+    border-right: none;
+    border-radius: 0;
     font-size: 16px;
     background: var(--input-bg);
     color: var(--text);
@@ -120,7 +75,7 @@
   #searchBtn {
     padding: 14px 28px;
     border: 2px solid var(--accent);
-    border-radius: 0; /* KOTAK */
+    border-radius: 0;
     background: var(--accent);
     color: #fff;
     font-size: 16px;
@@ -143,16 +98,16 @@
   
   .category-tabs {
     display: flex;
-    gap: 0; /* Tanpa gap, nempel */
+    gap: 0;
     flex: 1;
   }
   
   .tab {
     padding: 10px 24px;
-    border-radius: 0; /* KOTAK */
+    border-radius: 0;
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-right: none; /* Nempel dengan tab sebelah */
+    border-right: none;
     color: var(--text);
     font-size: 14px;
     font-weight: 600;
@@ -167,11 +122,11 @@
     border-color: var(--accent);
   }
 
-  /* Main Grid - Full Width Rapat */
+  /* Main Grid - ADA PADDING agar sejajar dengan kategori */
   main {
     flex: 1;
     width: 100%;
-    padding: 0;
+    padding: 24px; /* Padding sama dengan header & category */
     margin: 0;
   }
 
@@ -269,7 +224,7 @@
   }
   .page-btn {
     padding: 10px 18px;
-    border-radius: 0; /* KOTAK */
+    border-radius: 0;
     background: var(--card-bg);
     color: var(--text);
     border: 1px solid var(--border);
@@ -299,6 +254,8 @@
     .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
     header { padding: 12px 16px; }
     .search-container { padding: 0 16px; }
+    .category-wrapper { padding: 12px 16px; }
+    main { padding: 16px; }
     .card-info { padding: 10px; }
     .video-title { font-size: 13px; }
     
@@ -314,11 +271,7 @@
 <body>
 
 <header>
-  <h1>SeputarBokep99</h1>
-  <label class="theme-switch">
-    <input type="checkbox" id="themeToggle">
-    <span class="theme-slider"></span>
-  </label>
+  <h1 onclick="location.reload()" title="Klik untuk kembali ke beranda">SeputarBokep99</h1>
 </header>
 
 <div class="search-container">
@@ -354,7 +307,6 @@
   var paginationEl = document.getElementById("pagination");
   var searchBox = document.getElementById("searchBox");
   var searchBtn = document.getElementById("searchBtn");
-  var themeToggle = document.getElementById("themeToggle");
   var categoryTabsEl = document.getElementById("categoryTabs");
 
   function escapeHtml(str) {
@@ -474,15 +426,6 @@
       currentPage = 1;
       applyFilter();
     }
-  });
-
-  var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
-  document.documentElement.setAttribute("data-theme", savedTheme);
-  themeToggle.checked = savedTheme === "dark";
-  themeToggle.addEventListener("change", function () {
-    var next = themeToggle.checked ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("urlchecker-theme", next);
   });
 
   renderCategoryTabs();
