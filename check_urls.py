@@ -9,7 +9,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 DATA_FILE = "videos.txt"
-SITE_TITLE = "STREAMINGIN"  # ganti di sini kalau mau ubah nama situs
+SITE_TITLE = "SeputarBokep99"
 
 
 def load_videos(path=DATA_FILE):
