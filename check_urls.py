@@ -13,6 +13,7 @@ SITE_TITLE = "SeputarBokep99"
 
 
 def load_videos(path=DATA_FILE):
+    """Baca daftar video dari file JSON."""
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
@@ -43,6 +44,7 @@ def load_videos(path=DATA_FILE):
 
 
 def check_status(scraper, url):
+    """Cek status HTTP."""
     try:
         timeout = 30 if "vk.ru" in url else 15
         response = scraper.get(url, timeout=timeout)
@@ -79,6 +81,7 @@ def main():
 
 
 def cleanup_legacy_pages():
+    """Hapus file page*.html lama."""
     for f in glob.glob("page*.html"):
         os.remove(f)
         print(f"Hapus file lama: {f}")
@@ -102,7 +105,6 @@ def build_html(results):
     print(f"index.html dibuat ({total_items} video)")
 
 
-# --- PERBAIKAN CSS DI SINI AGAR RAPAT & NEMPEL ---
 HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
@@ -122,7 +124,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --btn-bg: #ffffff;
     --btn-text: #1565c0;
     --accent: #1565c0;
-    --hover-overlay: rgba(0,0,0,0.1);
+    --hover-bg: #f0f0f0;
   }
   [data-theme="dark"] {
     --bg: #121212;
@@ -136,7 +138,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --btn-bg: #2a2a2a;
     --btn-text: #64b5f6;
     --accent: #64b5f6;
-    --hover-overlay: rgba(255,255,255,0.1);
+    --hover-bg: #2c2c2c;
   }
   
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -177,11 +179,85 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--text);
   }
 
+  /* Search Bar with Button */
+  .search-container {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    gap: 10px;
+  }
+  #searchBox {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 16px;
+    background: var(--input-bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #searchBox:focus { border-color: var(--accent); }
+  
+  #searchBtn {
+    padding: 0 24px;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+  #searchBtn:hover { opacity: 0.9; }
+
+  /* Category Tabs & Theme Toggle Wrapper */
+  .category-wrapper {
+    background: var(--bg);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between; /* Agar tabs di kiri, toggle di kanan */
+    align-items: center;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .category-tabs {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* Theme Switch Styling */
   .theme-switch {
     position: relative;
     display: inline-block;
     width: 44px;
     height: 24px;
+    flex-shrink: 0; /* Agar tidak mengecil */
+    margin-left: 16px;
   }
   .theme-switch input { opacity: 0; width: 0; height: 0; }
   .theme-slider {
@@ -206,109 +282,45 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .theme-switch input:checked + .theme-slider { background-color: var(--accent); }
   .theme-switch input:checked + .theme-slider:before { transform: translateX(20px); }
 
-  /* Search Bar */
-  .search-container {
-    position: relative;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  #searchBox {
-    width: 100%;
-    padding: 12px 20px;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    font-size: 16px;
-    background: var(--input-bg);
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  #searchBox:focus { border-color: var(--accent); }
-
-  /* Category Tabs */
-  .category-wrapper {
-    background: var(--bg);
-    padding: 12px 24px;
-    border-bottom: 1px solid var(--border);
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-  }
-  .category-tabs {
-    display: flex;
-    gap: 10px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  .tab {
-    padding: 8px 20px;
-    border-radius: 20px;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    user-select: none;
-  }
-  .tab:hover { border-color: var(--accent); color: var(--accent); }
-  .tab.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-
   /* Main Content Grid - FULL WIDTH TANPA PADDING */
   main {
     flex: 1;
     width: 100%;
-    padding: 0; /* HAPUS PADDING KIRI/KANAN */
+    padding: 0;
     margin: 0;
   }
 
   .video-grid {
     display: grid;
-    /* Grid otomatis mengisi lebar penuh, minimal 250px per kartu */
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 0; /* HAPUS GAP AGAR RAPAT */
+    gap: 0;
     width: 100%;
   }
 
   .video-card {
     background: var(--card-bg);
-    border-radius: 0; /* HAPUS BORDER RADIUS AGAR LEBIH KOTAK */
+    border-radius: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border);
-    border-right: none; /* Hapus border kanan agar tidak double */
-    border-bottom: none; /* Hapus border bawah agar tidak double */
+    border-right: none;
+    border-bottom: none;
     height: 100%;
     position: relative;
   }
   
-  /* Tambahkan border kanan untuk kolom terakhir */
-  .video-card:nth-child(4n) {
-    border-right: 1px solid var(--border);
-  }
-  
-  /* Tambahkan border bawah untuk baris terakhir */
-  .video-card:nth-last-child(-n+4) {
-    border-bottom: 1px solid var(--border);
-  }
+  /* Border Logic for Grid */
+  .video-card:nth-child(4n) { border-right: 1px solid var(--border); }
+  .video-card:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
 
-  .video-card:hover {
-    z-index: 1;
-    position: relative;
-  }
+  .video-card:hover { z-index: 1; }
   
-  /* Efek hover overlay pada cover */
   .video-card:hover .cover-container::after {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--hover-overlay);
+    background: rgba(0,0,0,0.1);
     pointer-events: none;
   }
 
@@ -321,7 +333,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     cursor: pointer;
   }
   
-  /* Aspect Ratio Handling */
   .cover-container.ratio-16-9 { aspect-ratio: 16 / 9; }
   .cover-container.ratio-3-2 { aspect-ratio: 3 / 2; }
 
@@ -330,7 +341,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: opacity 0.3s;
   }
   .cover-img.broken { opacity: 0.5; }
   
@@ -412,9 +422,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   /* Responsive */
   @media (max-width: 768px) {
-    .video-grid { 
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-    }
+    .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
     header { padding: 12px 16px; }
     .card-info { padding: 10px; }
     .video-title { font-size: 13px; }
@@ -423,6 +431,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .video-card { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     .video-card:nth-child(4n) { border-right: 1px solid var(--border); }
     .video-card:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
+    
+    .category-wrapper { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .theme-switch { margin-left: 0; align-self: flex-end; }
   }
 </style>
 </head>
@@ -431,18 +442,21 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <header>
   <div class="header-top">
     <h1>__SITE_TITLE__</h1>
-    <label class="theme-switch">
-      <input type="checkbox" id="themeToggle">
-      <span class="theme-slider"></span>
-    </label>
+    <!-- Toggle theme DIHAPUS dari sini -->
   </div>
   <div class="search-container">
     <input type="text" id="searchBox" placeholder="Cari video...">
+    <button id="searchBtn">Cari</button>
   </div>
 </header>
 
 <div class="category-wrapper">
   <div class="category-tabs" id="categoryTabs"></div>
+  <!-- Toggle theme DIPINDAH ke sini -->
+  <label class="theme-switch">
+    <input type="checkbox" id="themeToggle">
+    <span class="theme-slider"></span>
+  </label>
 </div>
 
 <main>
@@ -469,6 +483,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   var noResult = document.getElementById("noResult");
   var paginationEl = document.getElementById("pagination");
   var searchBox = document.getElementById("searchBox");
+  var searchBtn = document.getElementById("searchBtn");
   var themeToggle = document.getElementById("themeToggle");
   var categoryTabsEl = document.getElementById("categoryTabs");
 
@@ -489,7 +504,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       coverHtml = '<div class="no-cover">No Cover</div>';
     }
 
-    // Cover clickable, tidak ada link teks
     var coverLink = '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="cover-container ' + ratioClass + '">' + coverHtml + '</a>';
 
     return '<div class="video-card">' +
@@ -596,11 +610,21 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     render();
   }
 
-  searchBox.addEventListener("input", function () {
+  // Event Listener untuk Tombol Cari (BUKAN live search)
+  searchBtn.addEventListener("click", function () {
     currentPage = 1;
     applyFilter();
   });
 
+  // Tetap support Enter key untuk mencari
+  searchBox.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      currentPage = 1;
+      applyFilter();
+    }
+  });
+
+  // Theme Logic
   var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
   themeToggle.checked = savedTheme === "dark";
@@ -610,6 +634,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     localStorage.setItem("urlchecker-theme", next);
   });
 
+  // Init
   renderCategoryTabs();
   applyFilter();
 })();
