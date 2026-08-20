@@ -151,11 +151,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     overflow-x: hidden;
   }
 
-  /* Header - Hanya Title */
+  /* Header dengan Title + Toggle Theme */
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
     padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   h1 { 
@@ -165,77 +168,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--text);
   }
 
-  /* Search Bar dengan Tombol */
-  .search-container {
-    max-width: 800px;
-    margin: 16px auto;
-    display: flex;
-    gap: 10px;
-    padding: 0 24px;
-  }
-  #searchBox {
-    flex: 1;
-    padding: 12px 20px;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    font-size: 16px;
-    background: var(--input-bg);
-    color: var(--text);
-    outline: none;
-  }
-  #searchBox:focus { border-color: var(--accent); }
-  
-  #searchBtn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 12px;
-    background: var(--accent);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  #searchBtn:hover { opacity: 0.9; }
-
-  /* Category Wrapper dengan Toggle */
-  .category-wrapper {
-    background: var(--bg);
-    padding: 12px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  
-  .category-tabs {
-    display: flex;
-    gap: 10px;
-    flex: 1;
-    overflow-x: auto;
-  }
-  
-  .tab {
-    padding: 8px 20px;
-    border-radius: 20px;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .tab:hover { border-color: var(--accent); color: var(--accent); }
-  .tab.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-
-  /* Theme Toggle */
+  /* Theme Toggle di Header */
   .theme-switch {
     position: relative;
     display: inline-block;
@@ -265,6 +198,78 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .theme-switch input:checked + .theme-slider { background-color: var(--accent); }
   .theme-switch input:checked + .theme-slider:before { transform: translateX(20px); }
+
+  /* Search Bar - KOTAK & PANJANG */
+  .search-container {
+    width: 100%;
+    max-width: 1000px; /* Lebih panjang */
+    margin: 20px auto;
+    display: flex;
+    gap: 0; /* Tanpa gap, nempel */
+    padding: 0 24px;
+  }
+  #searchBox {
+    flex: 1;
+    padding: 14px 20px;
+    border: 2px solid var(--border);
+    border-right: none; /* Nempel dengan tombol */
+    border-radius: 0; /* KOTAK */
+    font-size: 16px;
+    background: var(--input-bg);
+    color: var(--text);
+    outline: none;
+  }
+  #searchBox:focus { border-color: var(--accent); border-right-color: var(--accent); }
+  
+  #searchBtn {
+    padding: 14px 28px;
+    border: 2px solid var(--accent);
+    border-radius: 0; /* KOTAK */
+    background: var(--accent);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #searchBtn:hover { opacity: 0.9; }
+
+  /* Category Wrapper - Tab KOTAK */
+  .category-wrapper {
+    background: var(--bg);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .category-tabs {
+    display: flex;
+    gap: 0; /* Tanpa gap, nempel */
+    flex: 1;
+  }
+  
+  .tab {
+    padding: 10px 24px;
+    border-radius: 0; /* KOTAK */
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-right: none; /* Nempel dengan tab sebelah */
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab:last-child { border-right: 1px solid var(--border); }
+  .tab:hover { background: var(--hover-bg); }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
 
   /* Main Grid - Full Width Rapat */
   main {
@@ -357,26 +362,28 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border: 1px dashed var(--border);
   }
 
-  /* Pagination */
+  /* Pagination - Tombol KOTAK */
   .pagination {
     display: flex;
     justify-content: center;
-    gap: 8px;
+    gap: 0;
     margin-top: 40px;
     padding: 20px;
     background: var(--bg);
   }
   .page-btn {
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: 10px 18px;
+    border-radius: 0; /* KOTAK */
     background: var(--card-bg);
     color: var(--text);
     border: 1px solid var(--border);
+    border-right: none;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
   }
-  .page-btn:hover:not(.disabled) { background: var(--hover-bg); border-color: var(--accent); }
+  .page-btn:last-child { border-right: 1px solid var(--border); }
+  .page-btn:hover:not(.disabled) { background: var(--hover-bg); }
   .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .page-btn.disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -403,9 +410,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .video-card:nth-child(4n) { border-right: 1px solid var(--border); }
     .video-card:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
     
-    .category-wrapper { flex-direction: column; align-items: stretch; }
-    .category-tabs { justify-content: flex-start; }
-    .theme-switch { align-self: flex-end; }
+    .tab { border-right: 1px solid var(--border); }
+    .page-btn { border-right: 1px solid var(--border); }
   }
 </style>
 </head>
@@ -413,6 +419,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 <header>
   <h1>__SITE_TITLE__</h1>
+  <label class="theme-switch">
+    <input type="checkbox" id="themeToggle">
+    <span class="theme-slider"></span>
+  </label>
 </header>
 
 <div class="search-container">
@@ -422,10 +432,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 <div class="category-wrapper">
   <div class="category-tabs" id="categoryTabs"></div>
-  <label class="theme-switch">
-    <input type="checkbox" id="themeToggle">
-    <span class="theme-slider"></span>
-  </label>
 </div>
 
 <main>
@@ -562,7 +568,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     render();
   }
 
-  // Tombol Cari - BUKAN live search
   searchBtn.addEventListener("click", function () {
     currentPage = 1;
     applyFilter();
@@ -575,7 +580,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
   });
 
-  // Theme
   var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
   themeToggle.checked = savedTheme === "dark";
