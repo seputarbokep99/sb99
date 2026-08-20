@@ -291,7 +291,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <input type="text" id="searchBox" placeholder="Cari judul video atau URL (semua halaman & kategori)...">
   <button id="themeToggle">Ganti Tema</button>
 </div>
-<div class="search-note">Pencarian berlaku untuk semua data pada kategori yang sedang dipilih.</div>
 
 <table id="urlTable">
   <thead>
