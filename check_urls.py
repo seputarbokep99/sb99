@@ -8,44 +8,41 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-DATA_FILE = "videos.txt"
+DATA_FILE = "videos.json"
 SITE_TITLE = "SeputarBokep99"
 
-
 def load_videos(path=DATA_FILE):
-    """Baca url|judul|cover|kategori dari file txt. Baris kosong / diawali # diabaikan."""
-    videos = []
+    """Baca daftar video dari file JSON. Tiap entri wajib punya 'url', field lain opsional."""
     with open(path, "r", encoding="utf-8") as f:
-        for line_num, raw_line in enumerate(f, 1):
-            line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
+        raw = json.load(f)
 
-            parts = line.split("|")
-            if len(parts) < 2:
-                print(f"  -> Baris {line_num} diabaikan (format salah, butuh minimal 'URL | Judul'): {line}", file=sys.stderr)
-                continue
+    if not isinstance(raw, list):
+        print(f"ERROR: {path} harus berupa JSON array (list), bukan {type(raw).__name__}.", file=sys.stderr)
+        sys.exit(1)
 
-            url = parts[0].strip()
-            judul = parts[1].strip() if len(parts) > 1 else ""
-            cover = parts[2].strip() if len(parts) > 2 else ""
-            kategori = parts[3].strip() if len(parts) > 3 else ""
-            rasio = parts[4].strip() if len(parts) > 4 else ""
+    videos = []
+    for idx, entry in enumerate(raw, 1):
+        if not isinstance(entry, dict):
+            print(f"  -> Entri ke-{idx} diabaikan (bukan object JSON): {entry}", file=sys.stderr)
+            continue
 
-            if not url:
-                continue
-            if not judul:
-                judul = "(Tanpa Judul)"
-            if not kategori:
-                kategori = "Lainnya"
+        url = str(entry.get("url", "")).strip()
+        if not url:
+            print(f"  -> Entri ke-{idx} diabaikan (field 'url' kosong/tidak ada)", file=sys.stderr)
+            continue
 
-            rasio_normalized = rasio.replace(" ", "")
-            if rasio_normalized not in ("16:9", "3:2"):
-                if rasio_normalized:
-                    print(f"  -> Baris {line_num}: rasio '{rasio}' tidak dikenali, pakai default 16:9", file=sys.stderr)
-                rasio_normalized = "16:9"
+        judul = str(entry.get("judul", "")).strip() or "(Tanpa Judul)"
+        cover = str(entry.get("cover", "")).strip()
+        kategori = str(entry.get("kategori", "")).strip() or "Lainnya"
 
-            videos.append({"url": url, "judul": judul, "cover": cover, "kategori": kategori, "rasio": rasio_normalized})
+        rasio = str(entry.get("rasio", "")).strip().replace(" ", "")
+        if rasio not in ("16:9", "3:2"):
+            if rasio:
+                print(f"  -> Entri ke-{idx}: rasio '{rasio}' tidak dikenali, pakai default 16:9", file=sys.stderr)
+            rasio = "16:9"
+
+        videos.append({"url": url, "judul": judul, "cover": cover, "kategori": kategori, "rasio": rasio})
+
     return videos
 
 
