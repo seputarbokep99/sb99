@@ -17,7 +17,7 @@
     --btn-bg: #ffffff;
     --btn-text: #1565c0;
     --accent: #1565c0;
-    --cover-ratio: 16 / 9;
+    --hover-bg: #f0f0f0;
   }
   [data-theme="dark"] {
     --bg: #121212;
@@ -31,217 +31,316 @@
     --btn-bg: #2a2a2a;
     --btn-text: #64b5f6;
     --accent: #64b5f6;
+    --hover-bg: #2c2c2c;
   }
-  * { box-sizing: border-box; }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    max-width: 1100px;
-    margin: 40px auto;
-    padding: 0 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
-    transition: background 0.2s, color 0.2s;
-  }
-  h1 { font-size: 26px; margin-bottom: 4px; letter-spacing: 0.5px; }
-  .updated { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
-
-  .toolbar {
+    min-height: 100vh;
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Header Area */
+  header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
-  #searchBox {
-    flex: 1 1 260px;
-    padding: 10px 14px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 14px;
-    background: var(--input-bg);
+
+  h1 { 
+    font-size: 24px; 
+    font-weight: 800; 
+    letter-spacing: -0.5px;
     color: var(--text);
-  }
-  .toolbar select, .toolbar button {
-    padding: 9px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--btn-bg);
-    color: var(--btn-text);
-    font-size: 13px;
-    cursor: pointer;
   }
 
   .theme-switch {
     position: relative;
     display: inline-block;
-    width: 46px;
-    height: 26px;
-    flex-shrink: 0;
+    width: 44px;
+    height: 24px;
   }
-  .theme-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
+  .theme-switch input { opacity: 0; width: 0; height: 0; }
   .theme-slider {
     position: absolute;
     cursor: pointer;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--border);
-    border-radius: 999px;
-    transition: background 0.2s;
+    background-color: var(--border);
+    border-radius: 34px;
+    transition: .4s;
   }
-  .theme-slider::before {
-    content: "";
+  .theme-slider:before {
     position: absolute;
-    width: 20px;
-    height: 20px;
+    content: "";
+    height: 18px;
+    width: 18px;
     left: 3px;
-    top: 3px;
-    background: #fff;
+    bottom: 3px;
+    background-color: white;
     border-radius: 50%;
-    transition: transform 0.2s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: .4s;
   }
-  .theme-switch input:checked + .theme-slider {
-    background: var(--accent);
-  }
-  .theme-switch input:checked + .theme-slider::before {
-    transform: translateX(20px);
-  }
-  .search-note { color: var(--muted); font-size: 12px; margin: -6px 0 16px; }
+  .theme-switch input:checked + .theme-slider { background-color: var(--accent); }
+  .theme-switch input:checked + .theme-slider:before { transform: translateX(20px); }
 
-  .category-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 16px;
+  /* Search Bar */
+  .search-container {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  #searchBox {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 16px;
+    background: var(--input-bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #searchBox:focus { border-color: var(--accent); }
+
+  /* Category Tabs */
+  .category-wrapper {
+    background: var(--bg);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
   }
   .category-tabs {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
   .tab {
-    padding: 8px 18px;
-    border-radius: 999px;
+    padding: 8px 20px;
+    border-radius: 20px;
     background: var(--card-bg);
     border: 1px solid var(--border);
     color: var(--text);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
   }
-  .tab:hover { border-color: var(--accent); }
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
   .tab.active {
     background: var(--accent);
     color: #fff;
     border-color: var(--accent);
   }
 
-  table {
+  /* Main Content Grid */
+  main {
+    flex: 1;
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
     width: 100%;
-    border-collapse: collapse;
-    background: var(--card-bg);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
-  th, td {
-    padding: 10px 14px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
-    vertical-align: middle;
-  }
-  th { background: var(--header-bg); }
-  td a { color: var(--link); text-decoration: none; word-break: break-all; }
-  td a:hover { text-decoration: underline; }
 
-  .cover-cell { width: 130px; }
-  .cover-cell img {
-    width: 120px;
-    object-fit: cover;
-    border-radius: 4px;
-    display: block;
-    background: var(--header-bg);
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
   }
-  .no-cover-placeholder, .cover-cell img.broken {
-    width: 120px;
+
+  .video-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+  }
+  .video-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+  }
+
+  .cover-container {
+    position: relative;
+    width: 100%;
+    background: var(--header-bg);
+    overflow: hidden;
+  }
+  
+  /* Aspect Ratio Handling */
+  .cover-container.ratio-16-9 { aspect-ratio: 16 / 9; }
+  .cover-container.ratio-3-2 { aspect-ratio: 3 / 2; }
+
+  .cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s;
+  }
+  .cover-img.broken { opacity: 0.5; }
+  
+  .no-cover {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--header-bg);
     color: var(--muted);
-    font-size: 11px;
-    border-radius: 4px;
-    text-align: center;
+    font-size: 14px;
+    background: var(--header-bg);
   }
 
-  .no-result { text-align: center; color: var(--muted); padding: 24px; background: var(--card-bg); }
-
-  .pagination {
+  .card-info {
+    padding: 16px;
+    flex: 1;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    justify-content: center;
-    margin-top: 20px;
+    flex-direction: column;
   }
-  .page-link {
-    padding: 6px 12px;
-    border-radius: 6px;
-    background: var(--btn-bg);
+
+  .video-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    color: var(--text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .video-link {
+    font-size: 13px;
     color: var(--link);
     text-decoration: none;
-    font-size: 13px;
+    word-break: break-all;
+    margin-top: auto;
+    opacity: 0.8;
+  }
+  .video-link:hover { text-decoration: underline; opacity: 1; }
+
+  .no-result {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 18px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 40px;
+    padding-bottom: 20px;
+  }
+  .page-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text);
     border: 1px solid var(--border);
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
   }
-  .page-link:hover { opacity: 0.8; }
-  .page-link.active { background: var(--link); color: #fff; border-color: var(--link); }
-  .page-link.disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+  .page-btn:hover:not(.disabled) { background: var(--hover-bg); border-color: var(--accent); }
+  .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .page-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Footer */
+  footer {
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: auto;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+    header { padding: 12px 16px; }
+    main { padding: 16px; }
+    .card-info { padding: 12px; }
+    .video-title { font-size: 14px; }
+  }
 </style>
 </head>
 <body>
-<h1>SeputarBokep99</h1>
-<div class="updated">Terakhir diperbarui: 2026-08-20 12:03:31 WIB &middot; Total 10 video</div>
 
-<div class="category-row">
+<header>
+  <div class="header-top">
+    <h1>SeputarBokep99</h1>
+    <label class="theme-switch">
+      <input type="checkbox" id="themeToggle">
+      <span class="theme-slider"></span>
+    </label>
+  </div>
+  <div class="search-container">
+    <input type="text" id="searchBox" placeholder="Cari video...">
+  </div>
+</header>
+
+<div class="category-wrapper">
   <div class="category-tabs" id="categoryTabs"></div>
-  <label class="theme-switch">
-    <input type="checkbox" id="themeToggle">
-    <span class="theme-slider"></span>
-  </label>
 </div>
 
-<div class="toolbar">
-  <input type="text" id="searchBox" placeholder="Cari judul video atau URL...">
-  <button id="searchBtn">Cari</button>
-</div>
+<main>
+  <div class="video-grid" id="videoGrid"></div>
+  <div id="noResult" class="no-result" style="display:none;">Tidak ada video yang cocok.</div>
+  
+  <div id="pagination" class="pagination"></div>
+</main>
 
-<table id="urlTable">
-  <thead>
-    <tr><th>Cover</th><th>Judul Video</th><th>Link Video</th></tr>
-  </thead>
-  <tbody id="tableBody"></tbody>
-</table>
-<div id="noResult" class="no-result" style="display:none;">Tidak ada hasil yang cocok.</div>
-<div id="pagination" class="pagination"></div>
+<footer>
+  Copyright @ team 2026
+</footer>
 
-<script type="application/json" id="video-data">[{"judul": "[UN] MIDA-742 - Himari", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239157&hash=84132aa3098a56a0", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00742pl.w800.png", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"judul": "[UN] PRED-884 - Yui Hatano", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239146&hash=63a7975f718b4d28", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/pred00884pl.w800.png", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"judul": "[UN] MNGS-078 - Moka Haruhi", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239147&hash=4be75799c84547c2", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mngs00078pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"judul": "[UN] MIDA-499 - Rikka Ono", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239148&hash=4ea1e114c658a8fa", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00499pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"judul": "[UN] DSOD-001 - Waka Misono", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239149&hash=2b50195ffc1402ed", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/dsod00001pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"judul": "[UN] PKPD-430 - Runa Amane", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239159&hash=d96f9009be51949e", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/pkpd00430pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"judul": "[UN] JYMA-100 - Shiori Tsukata", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239160&hash=2e6f29a82ff8e202", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/jyma00100pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"judul": "[PlugTalk] Amalia Davis And Lena The Plug Having Threesome", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239161&hash=c52f2da09601fb48", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/of1.jpg", "kategori": "OnlyFans", "rasio": "16:9"}, {"judul": "Kyynaa Omek Pake Dildo", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239167&hash=a80cf70fef60bc6c", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/l1.jpg", "kategori": "Bokep Indo", "rasio": "16:9"}, {"judul": "[OnlyFans] Ava Nicks", "url": "https://vk.ru/video_ext.php?oid=672078245&id=456239145&hash=c14f94bf42a2ae3a", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/of2.jpg", "kategori": "OnlyFans", "rasio": "16:9"}]</script>
+<script type="application/json" id="video-data">[{"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239157&hash=84132aa3098a56a0", "judul": "[UN] MIDA-742 - Himari", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00742pl.w800.png", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239146&hash=63a7975f718b4d28", "judul": "[UN] PRED-884 - Yui Hatano", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/pred00884pl.w800.png", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239147&hash=4be75799c84547c2", "judul": "[UN] MNGS-078 - Moka Haruhi", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mngs00078pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239148&hash=4ea1e114c658a8fa", "judul": "[UN] MIDA-499 - Rikka Ono", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/mida00499pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239149&hash=2b50195ffc1402ed", "judul": "[UN] DSOD-001 - Waka Misono", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/dsod00001pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239159&hash=d96f9009be51949e", "judul": "[UN] PKPD-430 - Runa Amane", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/pkpd00430pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239160&hash=2e6f29a82ff8e202", "judul": "[UN] JYMA-100 - Shiori Tsukata", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/jyma00100pl.w800.jpg", "kategori": "Bokep Jepang Tanpa Sensor", "rasio": "3:2"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239161&hash=c52f2da09601fb48", "judul": "[PlugTalk] Amalia Davis And Lena The Plug Having Threesome", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/of1.jpg", "kategori": "OnlyFans", "rasio": "16:9"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239167&hash=a80cf70fef60bc6c", "judul": "Kyynaa Omek Pake Dildo", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/l1.jpg", "kategori": "Bokep Indo", "rasio": "16:9"}, {"url": "https://vk.ru/video_ext.php?oid=672078245&id=456239145&hash=c14f94bf42a2ae3a", "judul": "[OnlyFans] Ava Nicks", "cover": "https://raw.githubusercontent.com/seputarbokep99/stats/main/cover/of2.jpg", "kategori": "OnlyFans", "rasio": "16:9"}]</script>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 20;
+  var ITEMS_PER_PAGE = 20; // Sesuaikan jumlah item per halaman
   var currentPage = 1;
-  var currentCategory = "Semua";
-  var filtered = ALL_DATA;
+  var currentCategory = null; // Null berarti belum filter, nanti diisi kategori pertama
+  var filtered = [];
 
-  var tableBody = document.getElementById("tableBody");
+  var videoGrid = document.getElementById("videoGrid");
   var noResult = document.getElementById("noResult");
   var paginationEl = document.getElementById("pagination");
   var searchBox = document.getElementById("searchBox");
-  var searchBtn = document.getElementById("searchBtn");
   var themeToggle = document.getElementById("themeToggle");
   var categoryTabsEl = document.getElementById("categoryTabs");
 
@@ -251,27 +350,46 @@
     return div.innerHTML;
   }
 
-  function renderRow(item) {
-    var ratioCss = item.rasio === "3:2" ? "3/2" : "16/9";
+  function createCard(item) {
+    var ratioClass = item.rasio === "3:2" ? "ratio-3-2" : "ratio-16-9";
+    
     var coverHtml;
     if (item.cover) {
-      coverHtml = '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" style="aspect-ratio:' + ratioCss + '" ' +
-        'onerror="this.onerror=null;this.src=\'\';this.alt=\'(gagal load)\';this.classList.add(\'broken\')">';
+      coverHtml = '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" class="cover-img" ' +
+        'onerror="this.onerror=null;this.classList.add(\'broken\');this.alt=\'Error\';">';
     } else {
-      coverHtml = '<div class="no-cover-placeholder" style="aspect-ratio:' + ratioCss + '">Tidak ada cover</div>';
+      coverHtml = '<div class="no-cover">No Cover</div>';
     }
-    return '<tr>' +
-      '<td class="cover-cell">' + coverHtml + '</td>' +
-      '<td>' + escapeHtml(item.judul) + '</td>' +
-      '<td><a href="' + escapeHtml(item.url) + '">' + escapeHtml(item.url) + '</a></td>' +
-      '</tr>';
+
+    // Wrap cover in anchor tag so clicking it opens the link
+    var coverLink = '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="cover-container ' + ratioClass + '">' + coverHtml + '</a>';
+
+    return '<div class="video-card">' +
+      coverLink +
+      '<div class="card-info">' +
+        '<div class="video-title">' + escapeHtml(item.judul) + '</div>' +
+        '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="video-link">' + escapeHtml(item.url) + '</a>' +
+      '</div>' +
+    '</div>';
   }
 
   function renderCategoryTabs() {
-    var categories = ["Semua"];
+    // Get unique categories excluding "Semua" logic if desired, but here we just list what exists
+    var categories = [];
     ALL_DATA.forEach(function (item) {
       if (categories.indexOf(item.kategori) === -1) categories.push(item.kategori);
     });
+
+    // If no categories found (empty data), hide tabs
+    if (categories.length === 0) {
+      categoryTabsEl.parentElement.style.display = 'none';
+      return;
+    }
+
+    // Set default category if none selected
+    if (!currentCategory && categories.length > 0) {
+      currentCategory = categories[0];
+    }
 
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
@@ -283,7 +401,7 @@
         currentCategory = el.getAttribute("data-cat");
         currentPage = 1;
         applyFilter();
-        renderCategoryTabs();
+        renderCategoryTabs(); // Re-render to update active state
       });
     });
   }
@@ -291,6 +409,7 @@
   function render() {
     var totalItems = filtered.length;
     var totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+    
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
@@ -298,11 +417,11 @@
     var pageItems = filtered.slice(start, start + ITEMS_PER_PAGE);
 
     if (pageItems.length === 0) {
-      tableBody.innerHTML = "";
+      videoGrid.innerHTML = "";
       noResult.style.display = "block";
     } else {
       noResult.style.display = "none";
-      tableBody.innerHTML = pageItems.map(renderRow).join("");
+      videoGrid.innerHTML = pageItems.map(createCard).join("");
     }
 
     renderPagination(totalPages);
@@ -314,14 +433,29 @@
       return;
     }
     var parts = [];
-    parts.push('<span class="page-link' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</span>');
-    for (var p = 1; p <= totalPages; p++) {
-      parts.push('<span class="page-link' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</span>');
+    
+    // First Button
+    parts.push('<button class="page-btn' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</button>');
+    
+    // Numbered Buttons (Simple logic: show all or limit range if needed)
+    // For simplicity, showing all pages. If many pages, consider windowing.
+    var startPage = Math.max(1, currentPage - 2);
+    var endPage = Math.min(totalPages, currentPage + 2);
+    
+    if (startPage > 1) parts.push('<span class="page-btn disabled">...</span>');
+
+    for (var p = startPage; p <= endPage; p++) {
+      parts.push('<button class="page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>');
     }
-    parts.push('<span class="page-link' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</span>');
+
+    if (endPage < totalPages) parts.push('<span class="page-btn disabled">...</span>');
+
+    // Last Button
+    parts.push('<button class="page-btn' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</button>');
+
     paginationEl.innerHTML = parts.join("\n");
 
-    paginationEl.querySelectorAll(".page-link:not(.disabled)").forEach(function (el) {
+    paginationEl.querySelectorAll(".page-btn:not(.disabled)").forEach(function (el) {
       el.addEventListener("click", function () {
         currentPage = parseInt(el.getAttribute("data-page"), 10);
         render();
@@ -334,27 +468,25 @@
     var q = searchBox.value.trim().toLowerCase();
 
     filtered = ALL_DATA.filter(function (item) {
-      var matchCategory = currentCategory === "Semua" || item.kategori === currentCategory;
+      // Filter by Category (if currentCategory is set)
+      var matchCategory = !currentCategory || item.kategori === currentCategory;
+      
+      // Filter by Search
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1 || item.url.toLowerCase().indexOf(q) > -1;
+      
       return matchCategory && matchSearch;
     });
 
     render();
   }
 
-  searchBtn.addEventListener("click", function () {
+  // Event Listeners for Search
+  searchBox.addEventListener("input", function () {
     currentPage = 1;
     applyFilter();
   });
 
-  searchBox.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      currentPage = 1;
-      applyFilter();
-    }
-  });
-
-  // --- Tema (light/dark) via toggle switch, disimpan supaya nyaman dipakai lagi ---
+  // Theme Logic
   var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
   themeToggle.checked = savedTheme === "dark";
@@ -364,10 +496,9 @@
     localStorage.setItem("urlchecker-theme", next);
   });
 
-  // --- Rasio cover sekarang ditentukan per video lewat kolom RASIO di videos.txt ---
-
+  // Init
   renderCategoryTabs();
-  render();
+  applyFilter(); // This will trigger render()
 })();
 </script>
 </body>
