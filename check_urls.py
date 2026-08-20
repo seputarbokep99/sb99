@@ -226,7 +226,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: var(--accent);
   }
 
-  /* Burger Button - Hidden di desktop */
+  /* Burger Button */
   .burger-btn {
     display: none;
     padding: 10px 16px;
@@ -365,6 +365,77 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     cursor: not-allowed;
   }
 
+  /* Video Modal/Player */
+  .video-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  .video-modal.active {
+    display: flex;
+  }
+  
+  .modal-content {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+  }
+  
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    margin-right: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .modal-close {
+    padding: 8px 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .modal-close:hover { opacity: 0.9; }
+  
+  .modal-body {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+  }
+  
+  .modal-body iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
   /* Footer */
   footer {
     background: var(--card-bg);
@@ -376,7 +447,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     margin-top: auto;
   }
 
-  /* Responsive - Mobile & Tablet */
+  /* Responsive */
   @media (max-width: 768px) {
     .video-grid { 
       grid-template-columns: 1fr;
@@ -413,7 +484,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .video-card:nth-child(4n) { border-right: 1px solid var(--border); }
     .video-card:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
     
-    /* Pagination responsive */
     .pagination {
       flex-wrap: wrap;
       gap: 0;
@@ -421,6 +491,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .page-btn {
       padding: 8px 14px;
       font-size: 13px;
+    }
+    
+    .modal-content {
+      max-width: 100%;
+    }
+    .modal-title {
+      font-size: 16px;
     }
   }
 </style>
@@ -451,11 +528,24 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   Dibuat dengan ❤️ dan ☕
 </footer>
 
+<!-- Video Modal Player -->
+<div class="video-modal" id="videoModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Judul Video</div>
+      <button class="modal-close" id="modalClose">Tutup</button>
+    </div>
+    <div class="modal-body">
+      <iframe id="videoPlayer" src="" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
+
 <script type="application/json" id="video-data">__DATA_JSON__</script>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 30; // Batas card per halaman
+  var ITEMS_PER_PAGE = 20;
   var currentPage = 1;
   var currentCategory = null;
   var filtered = [];
@@ -467,6 +557,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   var searchBtn = document.getElementById("searchBtn");
   var categoryTabsEl = document.getElementById("categoryTabs");
   var burgerBtn = document.getElementById("burgerBtn");
+  var videoModal = document.getElementById("videoModal");
+  var videoPlayer = document.getElementById("videoPlayer");
+  var modalTitle = document.getElementById("modalTitle");
+  var modalClose = document.getElementById("modalClose");
 
   function escapeHtml(str) {
     var div = document.createElement("div");
@@ -480,12 +574,26 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       ? '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" class="cover-img" onerror="this.onerror=null;this.classList.add(\'broken\');this.alt=\'Error\';">'
       : '<div class="no-cover">No Cover</div>';
     
-    var coverLink = '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="cover-container ' + ratioClass + '">' + coverHtml + '</a>';
+    // Cover clickable - buka modal player
+    var coverLink = '<div class="cover-container ' + ratioClass + '" data-url="' + escapeHtml(item.url) + '" data-title="' + escapeHtml(item.judul) + '">' + coverHtml + '</div>';
 
     return '<div class="video-card">' +
       coverLink +
       '<div class="card-info"><div class="video-title">' + escapeHtml(item.judul) + '</div></div>' +
     '</div>';
+  }
+
+  function openVideoPlayer(url, title) {
+    modalTitle.textContent = title;
+    videoPlayer.src = url;
+    videoModal.classList.add("active");
+    document.body.style.overflow = "hidden"; // Prevent background scroll
+  }
+
+  function closeVideoPlayer() {
+    videoPlayer.src = ""; // Stop video
+    videoModal.classList.remove("active");
+    document.body.style.overflow = ""; // Restore scroll
   }
 
   function renderCategoryTabs() {
@@ -509,7 +617,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     categoryTabsEl.querySelectorAll(".tab").forEach(function (el) {
       el.addEventListener("click", function () {
         currentCategory = el.getAttribute("data-cat");
-        currentPage = 1; // Reset ke halaman 1 saat ganti kategori
+        currentPage = 1;
         applyFilter();
         renderCategoryTabs();
         categoryTabsEl.classList.remove("open");
@@ -521,7 +629,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var totalItems = filtered.length;
     var totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
     
-    // Validasi halaman
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
@@ -534,6 +641,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     } else {
       noResult.style.display = "none";
       videoGrid.innerHTML = pageItems.map(createCard).join("");
+      
+      // Add click listeners to cover containers
+      videoGrid.querySelectorAll(".cover-container").forEach(function (el) {
+        el.addEventListener("click", function () {
+          var url = el.getAttribute("data-url");
+          var title = el.getAttribute("data-title");
+          openVideoPlayer(url, title);
+        });
+      });
     }
 
     renderPagination(totalPages);
@@ -546,40 +662,32 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
     
     var parts = [];
-    
-    // Tombol Pertama
     parts.push('<button class="page-btn' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</button>');
     
-    // Hitung range halaman yang ditampilkan
     var startPage = Math.max(1, currentPage - 2);
     var endPage = Math.min(totalPages, currentPage + 2);
     
-    // Ellipsis di awal
     if (startPage > 1) {
       parts.push('<span class="page-btn disabled">...</span>');
     }
     
-    // Nomor halaman
     for (var p = startPage; p <= endPage; p++) {
       parts.push('<button class="page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>');
     }
     
-    // Ellipsis di akhir
     if (endPage < totalPages) {
       parts.push('<span class="page-btn disabled">...</span>');
     }
     
-    // Tombol Terakhir
     parts.push('<button class="page-btn' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</button>');
 
     paginationEl.innerHTML = parts.join("\n");
     
-    // Event listener untuk tombol pagination
     paginationEl.querySelectorAll(".page-btn:not(.disabled)").forEach(function (el) {
       el.addEventListener("click", function () {
         currentPage = parseInt(el.getAttribute("data-page"), 10);
         render();
-        window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll ke atas
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
   }
@@ -594,7 +702,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     render();
   }
 
-  // Tombol Cari
   searchBtn.addEventListener("click", function () {
     currentPage = 1;
     applyFilter();
@@ -607,12 +714,27 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
   });
 
-  // Burger Menu Toggle
   burgerBtn.addEventListener("click", function () {
     categoryTabsEl.classList.toggle("open");
   });
 
-  // Init
+  // Close modal
+  modalClose.addEventListener("click", closeVideoPlayer);
+  
+  // Close modal when clicking outside
+  videoModal.addEventListener("click", function (e) {
+    if (e.target === videoModal) {
+      closeVideoPlayer();
+    }
+  });
+  
+  // Close modal with Escape key
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && videoModal.classList.contains("active")) {
+      closeVideoPlayer();
+    }
+  });
+
   renderCategoryTabs();
   applyFilter();
 })();
