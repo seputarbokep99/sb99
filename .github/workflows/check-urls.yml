@@ -2,11 +2,11 @@ name: Check URL Status
 
 on:
   schedule:
-    - cron: '*/30 * * * *'   # tiap 30 menit
-  workflow_dispatch: {}       # bisa dijalankan manual dari tab Actions
+    - cron: '*/30 * * * *' # tiap 30 menit
+  workflow_dispatch: {} # bisa dijalankan manual dari tab Actions
 
 permissions:
-  contents: write             # wajib, biar job ini boleh push balik ke repo
+  contents: write # wajib, biar job ini boleh push balik ke repo
 
 jobs:
   check-urls:
@@ -43,5 +43,8 @@ jobs:
             echo "Tidak ada perubahan, skip commit."
           else
             git commit -m "Update URL status: $(TZ='Asia/Jakarta' date '+%Y-%m-%d %H:%M:%S WIB')"
-            git push
+            
+            # Tarik perubahan terbaru dulu biar tidak bentrok
+            git pull --rebase origin main
+            git push origin main
           fi
