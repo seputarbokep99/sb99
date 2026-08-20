@@ -33,21 +33,10 @@ jobs:
 
           git add index.html
 
-          # Tambahkan page*.html satu-satu HANYA kalau memang ada filenya.
-          # (git add langsung ke pattern 'page*.html' akan error kalau
-          # tidak ada file yang cocok, misal saat cuma ada 1 halaman)
-          shopt -s nullglob
-          for f in page*.html; do
-            git add "$f"
-          done
-          shopt -u nullglob
-
-          # Tangani file page*.html yang sudah dihapus dari working directory
-          # (karena jumlah halaman berkurang) tapi masih tercatat di git
-          for f in $(git ls-files 'page*.html'); do
-            if [ ! -f "$f" ]; then
-              git rm --cached "$f"
-            fi
+          # Hapus tracking file page*.html peninggalan versi lama (kalau ada),
+          # karena sekarang paginasi full client-side dalam satu index.html
+          for f in $(git ls-files 'page*.html' 2>/dev/null); do
+            git rm -f "$f"
           done
 
           if git diff --cached --quiet; then
