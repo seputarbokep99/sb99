@@ -13,6 +13,7 @@ SITE_TITLE = "SeputarBokep99 💦"
 
 
 def load_videos(path=DATA_FILE):
+    """Baca daftar video dari file JSON."""
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
@@ -32,17 +33,26 @@ def load_videos(path=DATA_FILE):
         judul = str(entry.get("judul", "")).strip() or "(Tanpa Judul)"
         cover = str(entry.get("cover", "")).strip()
         kategori = str(entry.get("kategori", "")).strip() or "Lainnya"
+        durasi = str(entry.get("durasi", "")).strip() # <-- TAMBAHAN: Baca durasi
 
         rasio = str(entry.get("rasio", "")).strip().replace(" ", "")
         if rasio not in ("16:9", "3:2"):
             rasio = "16:9"
 
-        videos.append({"url": url, "judul": judul, "cover": cover, "kategori": kategori, "rasio": rasio})
+        videos.append({
+            "url": url, 
+            "judul": judul, 
+            "cover": cover, 
+            "kategori": kategori, 
+            "rasio": rasio,
+            "durasi": durasi # <-- TAMBAHAN: Simpan durasi
+        })
 
     return videos
 
 
 def check_status(scraper, url):
+    """Cek status HTTP."""
     try:
         timeout = 30 if "vk.ru" in url else 15
         response = scraper.get(url, timeout=timeout)
@@ -79,6 +89,7 @@ def main():
 
 
 def cleanup_legacy_pages():
+    """Hapus file page*.html lama."""
     for f in glob.glob("page*.html"):
         os.remove(f)
         print(f"Hapus file lama: {f}")
@@ -295,6 +306,22 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--muted);
     font-size: 14px;
     background: var(--header-bg);
+  }
+
+  /* ===== BADGE DURASI DI POJOK KANAN BAWAH ===== */
+  .duration-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.85);
+    color: #ffffff;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    pointer-events: none; /* Agar klik tembus ke cover */
+    z-index: 2;
+    letter-spacing: 0.5px;
   }
 
   .card-info {
@@ -572,51 +599,26 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   function updateURL() {
     var params = new URLSearchParams();
-    
-    if (currentCategory) {
-      params.set("cat", currentCategory);
-    }
-    
-    if (currentPage > 1) {
-      params.set("page", currentPage.toString());
-    }
-    
-    if (currentSearch) {
-      params.set("q", currentSearch);
-    }
+    if (currentCategory) params.set("cat", currentCategory);
+    if (currentPage > 1) params.set("page", currentPage.toString());
+    if (currentSearch) params.set("q", currentSearch);
     
     var newUrl = window.location.pathname;
     var queryString = params.toString();
-    if (queryString) {
-      newUrl += "?" + queryString;
-    }
-    
-    // Update URL tanpa reload
+    if (queryString) newUrl += "?" + queryString;
     window.history.replaceState({}, "", newUrl);
   }
 
   function loadStateFromURL() {
     var params = getParams();
-    
-    // Set kategori dari URL
     if (params.cat) {
-      // Validasi apakah kategori ada di data
       var validCategories = [];
       ALL_DATA.forEach(function (item) {
         if (validCategories.indexOf(item.kategori) === -1) validCategories.push(item.kategori);
       });
-      
-      if (validCategories.indexOf(params.cat) > -1) {
-        currentCategory = params.cat;
-      }
+      if (validCategories.indexOf(params.cat) > -1) currentCategory = params.cat;
     }
-    
-    // Set halaman dari URL
-    if (params.page && params.page > 0) {
-      currentPage = params.page;
-    }
-    
-    // Set pencarian dari URL
+    if (params.page && params.page > 0) currentPage = params.page;
     if (params.q) {
       currentSearch = params.q;
       searchBox.value = currentSearch;
@@ -629,7 +631,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       ? '<img src="' + escapeHtml(item.cover) + '" alt="cover" loading="lazy" class="cover-img" onerror="this.onerror=null;this.classList.add(\'broken\');this.alt=\'Error\';">'
       : '<div class="no-cover">No Cover</div>';
     
-    var coverLink = '<div class="cover-container ' + ratioClass + '" data-url="' + escapeHtml(item.url) + '" data-title="' + escapeHtml(item.judul) + '">' + coverHtml + '</div>';
+    // Tambahkan badge durasi jika ada
+    var durationHtml = item.durasi ? '<div class="duration-badge">' + escapeHtml(item.durasi) + '</div>' : '';
+    
+    var coverLink = '<div class="cover-container ' + ratioClass + '" data-url="' + escapeHtml(item.url) + '" data-title="' + escapeHtml(item.judul) + '">' + 
+      coverHtml + 
+      durationHtml + 
+    '</div>';
 
     return '<div class="video-card">' +
       coverLink +
@@ -661,10 +669,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return;
     }
 
-    // Jika belum ada kategori aktif, pakai kategori pertama
-    if (!currentCategory && categories.length > 0) {
-      currentCategory = categories[0];
-    }
+    if (!currentCategory && categories.length > 0) currentCategory = categories[0];
 
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
@@ -677,7 +682,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         currentPage = 1;
         applyFilter();
         renderCategoryTabs();
-        updateURL(); // Update URL saat ganti kategori
+        updateURL();
         categoryTabsEl.classList.remove("open");
       });
     });
@@ -710,7 +715,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     renderPagination(totalPages);
-    updateURL(); // Update URL setiap render
+    updateURL();
   }
 
   function renderPagination(totalPages) {
@@ -725,18 +730,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var startPage = Math.max(1, currentPage - 2);
     var endPage = Math.min(totalPages, currentPage + 2);
     
-    if (startPage > 1) {
-      parts.push('<span class="page-btn disabled">...</span>');
-    }
+    if (startPage > 1) parts.push('<span class="page-btn disabled">...</span>');
     
     for (var p = startPage; p <= endPage; p++) {
       parts.push('<button class="page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>');
     }
     
-    if (endPage < totalPages) {
-      parts.push('<span class="page-btn disabled">...</span>');
-    }
-    
+    if (endPage < totalPages) parts.push('<span class="page-btn disabled">...</span>');
     parts.push('<button class="page-btn' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</button>');
 
     paginationEl.innerHTML = parts.join("\n");
@@ -752,7 +752,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   function applyFilter() {
     var q = searchBox.value.trim().toLowerCase();
-    currentSearch = q; // Simpan state pencarian
+    currentSearch = q;
     
     filtered = ALL_DATA.filter(function (item) {
       var matchCategory = !currentCategory || item.kategori === currentCategory;
@@ -762,37 +762,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     render();
   }
 
-  searchBtn.addEventListener("click", function () {
-    currentPage = 1;
-    applyFilter();
-  });
-
-  searchBox.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      currentPage = 1;
-      applyFilter();
-    }
-  });
-
-  burgerBtn.addEventListener("click", function () {
-    categoryTabsEl.classList.toggle("open");
-  });
-
+  searchBtn.addEventListener("click", function () { currentPage = 1; applyFilter(); });
+  searchBox.addEventListener("keydown", function (e) { if (e.key === "Enter") { currentPage = 1; applyFilter(); } });
+  burgerBtn.addEventListener("click", function () { categoryTabsEl.classList.toggle("open"); });
   modalClose.addEventListener("click", closeVideoPlayer);
   
-  videoModal.addEventListener("click", function (e) {
-    if (e.target === videoModal) {
-      closeVideoPlayer();
-    }
-  });
-  
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && videoModal.classList.contains("active")) {
-      closeVideoPlayer();
-    }
-  });
+  videoModal.addEventListener("click", function (e) { if (e.target === videoModal) closeVideoPlayer(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && videoModal.classList.contains("active")) closeVideoPlayer(); });
 
-  // ===== INIT: Load state dari URL =====
   loadStateFromURL();
   renderCategoryTabs();
   applyFilter();
