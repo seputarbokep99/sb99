@@ -46,7 +46,6 @@ def load_videos(path=DATA_FILE):
 def check_status(scraper, url):
     """Cek status HTTP."""
     try:
-        # Timeout lebih lama untuk VK
         timeout = 30 if "vk.ru" in url else 15
         response = scraper.get(url, timeout=timeout)
         return response.status_code
@@ -76,7 +75,7 @@ def main():
             results.append(v)
         else:
             print(f"Cek: {v['url']} -> [{v['judul']}] ({v['kategori']}) -> {status} (DISEMBUNYIKAN)")
-        time.sleep(0.5)  # Jeda antar request
+        time.sleep(0.5)
 
     return results
 
@@ -93,7 +92,6 @@ def build_html(results):
     total_items = len(results)
 
     json_data = json.dumps(results, ensure_ascii=False)
-    # Escape script tags inside JSON to prevent breaking HTML
     json_data_safe = json_data.replace("</script", "<\\/script").replace("<!--", "<\\!--")
 
     template = HTML_TEMPLATE
@@ -262,19 +260,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: var(--accent);
   }
 
-  /* Main Content Grid */
+  /* Main Content Grid - FULL WIDTH & RAPAT */
   main {
     flex: 1;
     padding: 24px;
-    max-width: 1400px;
-    margin: 0 auto;
     width: 100%;
+    max-width: 100%; /* Hapus batasan lebar agar rapat */
   }
 
   .video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 24px;
+    /* Grid otomatis mengisi ruang, minimal 250px per kartu */
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px; /* Jarak antar kartu */
   }
 
   .video-card {
@@ -297,6 +295,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     width: 100%;
     background: var(--header-bg);
     overflow: hidden;
+    display: block; /* Penting agar link mencakup seluruh area gambar */
+    cursor: pointer;
   }
   
   /* Aspect Ratio Handling */
@@ -334,23 +334,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 15px;
     font-weight: 600;
     line-height: 1.4;
-    margin-bottom: 8px;
     color: var(--text);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
-  .video-link {
-    font-size: 13px;
-    color: var(--link);
-    text-decoration: none;
-    word-break: break-all;
-    margin-top: auto;
-    opacity: 0.8;
-  }
-  .video-link:hover { text-decoration: underline; opacity: 1; }
 
   .no-result {
     grid-column: 1 / -1;
@@ -399,7 +388,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   /* Responsive */
   @media (max-width: 768px) {
-    .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+    .video-grid { 
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+      gap: 12px; 
+    }
     header { padding: 12px 16px; }
     main { padding: 16px; }
     .card-info { padding: 12px; }
@@ -441,9 +433,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 20; // Sesuaikan jumlah item per halaman
+  var ITEMS_PER_PAGE = 20;
   var currentPage = 1;
-  var currentCategory = null; // Null berarti belum filter, nanti diisi kategori pertama
+  var currentCategory = null;
   var filtered = [];
 
   var videoGrid = document.getElementById("videoGrid");
@@ -470,32 +462,28 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       coverHtml = '<div class="no-cover">No Cover</div>';
     }
 
-    // Wrap cover in anchor tag so clicking it opens the link
+    // Cover sekarang dibungkus <a> tag dan tidak ada link teks di bawahnya
     var coverLink = '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="cover-container ' + ratioClass + '">' + coverHtml + '</a>';
 
     return '<div class="video-card">' +
       coverLink +
       '<div class="card-info">' +
         '<div class="video-title">' + escapeHtml(item.judul) + '</div>' +
-        '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="video-link">' + escapeHtml(item.url) + '</a>' +
       '</div>' +
     '</div>';
   }
 
   function renderCategoryTabs() {
-    // Get unique categories excluding "Semua" logic if desired, but here we just list what exists
     var categories = [];
     ALL_DATA.forEach(function (item) {
       if (categories.indexOf(item.kategori) === -1) categories.push(item.kategori);
     });
 
-    // If no categories found (empty data), hide tabs
     if (categories.length === 0) {
       categoryTabsEl.parentElement.style.display = 'none';
       return;
     }
 
-    // Set default category if none selected
     if (!currentCategory && categories.length > 0) {
       currentCategory = categories[0];
     }
@@ -510,7 +498,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         currentCategory = el.getAttribute("data-cat");
         currentPage = 1;
         applyFilter();
-        renderCategoryTabs(); // Re-render to update active state
+        renderCategoryTabs();
       });
     });
   }
@@ -543,11 +531,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
     var parts = [];
     
-    // First Button
     parts.push('<button class="page-btn' + (currentPage === 1 ? ' disabled' : '') + '" data-page="1">Pertama</button>');
     
-    // Numbered Buttons (Simple logic: show all or limit range if needed)
-    // For simplicity, showing all pages. If many pages, consider windowing.
     var startPage = Math.max(1, currentPage - 2);
     var endPage = Math.min(totalPages, currentPage + 2);
     
@@ -559,7 +544,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
     if (endPage < totalPages) parts.push('<span class="page-btn disabled">...</span>');
 
-    // Last Button
     parts.push('<button class="page-btn' + (currentPage === totalPages ? ' disabled' : '') + '" data-page="' + totalPages + '">Terakhir</button>');
 
     paginationEl.innerHTML = parts.join("\n");
@@ -577,25 +561,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var q = searchBox.value.trim().toLowerCase();
 
     filtered = ALL_DATA.filter(function (item) {
-      // Filter by Category (if currentCategory is set)
       var matchCategory = !currentCategory || item.kategori === currentCategory;
-      
-      // Filter by Search
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1 || item.url.toLowerCase().indexOf(q) > -1;
-      
       return matchCategory && matchSearch;
     });
 
     render();
   }
 
-  // Event Listeners for Search
   searchBox.addEventListener("input", function () {
     currentPage = 1;
     applyFilter();
   });
 
-  // Theme Logic
   var savedTheme = localStorage.getItem("urlchecker-theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
   themeToggle.checked = savedTheme === "dark";
@@ -605,9 +583,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     localStorage.setItem("urlchecker-theme", next);
   });
 
-  // Init
   renderCategoryTabs();
-  applyFilter(); // This will trigger render()
+  applyFilter();
 })();
 </script>
 </body>
