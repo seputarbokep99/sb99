@@ -9,7 +9,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 DATA_FILE = "videos.json"
-SITE_TITLE = "Arsip Video Saya"  # ganti di sini kalau mau ubah nama halaman
+SITE_TITLE = "SeputarBokep99"
 
 
 def load_videos(path=DATA_FILE):
