@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 import re
 
 DATA_FILE = "videos.json"
-SITE_TITLE = "SeputarBokep99 💦"
+SITE_TITLE = "SeputarBokep99 💦""
 
 
 def load_videos(path=DATA_FILE):
@@ -52,6 +52,9 @@ def load_videos(path=DATA_FILE):
             "durasi": durasi,
             "slug": slug
         })
+
+    # REVERSE ORDER: Video terbaru (paling bawah di JSON) jadi paling atas
+    videos.reverse()
 
     return videos
 
@@ -150,7 +153,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     overflow-x: hidden;
   }
 
-  /* Header: Judul Kiri + Search Kanan */
   header {
     background: var(--card-bg);
     border-bottom: 1px solid var(--border);
@@ -171,7 +173,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   h1:hover { opacity: 0.8; }
 
-  /* Search di dalam header, sebelah kanan */
   .search-container {
     flex: 1;
     display: flex;
@@ -479,7 +480,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       grid-template-columns: 1fr;
     }
     
-    /* Mobile: Header jadi 2 baris (judul atas, search bawah) */
     header { 
       padding: 12px 16px; 
       flex-direction: column;
