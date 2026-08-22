@@ -256,14 +256,24 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
+  /* Section Title - Garis biru pake ::before biar padding tetap lurus */
   .section-title {
+    position: relative;
     padding: 12px 24px;
     font-size: 16px;
     font-weight: 600;
     color: var(--text);
-    border-left: 3px solid var(--accent);
     background: var(--card-bg);
     margin: 0;
+  }
+  .section-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
   }
 
   main {
@@ -564,7 +574,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </header>
 
 <div class="category-wrapper">
-  <button class="burger-btn" id="burgerBtn"> Kategori</button>
+  <button class="burger-btn" id="burgerBtn">☰ Kategori</button>
   <div class="category-tabs" id="categoryTabs"></div>
 </div>
 
