@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SeputarBokep99 💦</title>
+<title>SeputarBokep99</title>
 <style>
   :root {
     --bg: #121212;
@@ -137,13 +137,14 @@
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
+  /* Section Title - Garis biru ada jarak dari tepi kiri, sejajar tab kategori */
   .section-title {
+    margin: 0 24px;
     padding: 12px 20px;
     font-size: 16px;
     font-weight: 600;
     color: var(--text);
     background: var(--card-bg);
-    margin: 0 24px;
     border-left: 3px solid var(--accent);
   }
 
@@ -389,9 +390,9 @@
       align-items: stretch;
     }
     .section-title {
+      margin: 0 16px;
       padding: 12px 12px;
       font-size: 14px;
-      margin: 0 16px;
       border-left: 3px solid var(--accent);
     }
     main { padding: 16px; }
@@ -439,7 +440,7 @@
 <body>
 
 <header>
-  <h1 onclick="goHome()" title="Klik untuk kembali ke beranda">SeputarBokep99 💦</h1>
+  <h1 onclick="goHome()" title="Klik untuk kembali ke beranda">SeputarBokep99</h1>
   <div class="search-container">
     <input type="text" id="searchBox" placeholder="Cari video...">
     <button id="searchBtn">Cari</button>
@@ -447,7 +448,7 @@
 </header>
 
 <div class="category-wrapper">
-  <button class="burger-btn" id="burgerBtn">☰ Kategori</button>
+  <button class="burger-btn" id="burgerBtn"> Kategori</button>
   <div class="category-tabs" id="categoryTabs"></div>
 </div>
 
@@ -460,7 +461,7 @@
 </main>
 
 <footer>
-  Dibuat dengan ❤️ dan ☕
+  Copyright @ team 2026
 </footer>
 
 <div class="video-modal" id="videoModal">
@@ -479,7 +480,7 @@
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 30;
+  var ITEMS_PER_PAGE = 20;
   var LATEST_CATEGORY = "Terbaru";
   var currentPage = 1;
   var currentCategory = null;
