@@ -243,6 +243,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: #fff;
     border-color: var(--accent);
   }
+  .tab.latest-tab {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .tab.latest-tab:hover { opacity: 0.9; }
 
   .burger-btn {
     display: none;
@@ -563,7 +569,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </main>
 
 <footer>
-  Dibuat dengan ❤️ dan ☕
+  Dibuat dengan ♥️ dan ☕
 </footer>
 
 <div class="video-modal" id="videoModal">
@@ -583,6 +589,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
   var ITEMS_PER_PAGE = 30;
+  var LATEST_CATEGORY = "Terbaru";
   var currentPage = 1;
   var currentCategory = null;
   var currentSearch = "";
@@ -632,11 +639,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   function loadStateFromURL() {
     var params = getParams();
     if (params.cat) {
-      var validCategories = [];
-      ALL_DATA.forEach(function (item) {
-        if (validCategories.indexOf(item.kategori) === -1) validCategories.push(item.kategori);
-      });
-      if (validCategories.indexOf(params.cat) > -1) currentCategory = params.cat;
+      var validCategories = getSortedCategories();
+      if (validCategories.indexOf(params.cat) > -1) {
+        currentCategory = params.cat;
+      }
     }
     if (params.page && params.page > 0) currentPage = params.page;
     if (params.q) {
@@ -656,7 +662,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
 
   window.goHome = function() {
-    currentCategory = getFirstCategory();
+    currentCategory = LATEST_CATEGORY;
     currentSearch = "";
     currentPage = 1;
     searchBox.value = "";
@@ -673,12 +679,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     categories.sort(function(a, b) {
       return a.toLowerCase().localeCompare(b.toLowerCase());
     });
+    categories.unshift(LATEST_CATEGORY);
     return categories;
   }
 
   function getFirstCategory() {
-    var categories = getSortedCategories();
-    return categories.length > 0 ? categories[0] : null;
+    return LATEST_CATEGORY;
   }
 
   function createCard(item) {
@@ -733,12 +739,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     if (!currentCategory) {
-      currentCategory = categories[0];
+      currentCategory = LATEST_CATEGORY;
     }
 
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
-      return '<span class="tab' + activeClass + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span>';
+      var latestClass = cat === LATEST_CATEGORY ? " latest-tab" : "";
+      return '<span class="tab' + activeClass + latestClass + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span>';
     }).join("");
 
     categoryTabsEl.querySelectorAll(".tab").forEach(function (el) {
@@ -820,8 +827,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var q = searchBox.value.trim().toLowerCase();
     currentSearch = q;
     
+    // HAPUS BATASAN 50 VIDEO, SEKARANG PAKAI SEMUA DATA (ALL_DATA)
     filtered = ALL_DATA.filter(function (item) {
-      var matchCategory = !currentCategory || item.kategori === currentCategory;
+      // Kalau kategori "Terbaru", tampilkan semua (lewati filter kategori)
+      var matchCategory = (currentCategory === LATEST_CATEGORY) || item.kategori === currentCategory;
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1;
       return matchCategory && matchSearch;
     });
