@@ -256,15 +256,24 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
-  /* Section Title - Garis biru ada jarak dari tepi kiri, sejajar tab kategori */
+  /* Section Title - Garis biru ada jarak dari atas dan bawah */
   .section-title {
+    position: relative;
     margin: 0 24px;
     padding: 12px 20px;
     font-size: 16px;
     font-weight: 600;
     color: var(--text);
     background: var(--card-bg);
-    border-left: 3px solid var(--accent);
+  }
+  .section-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: var(--accent);
   }
 
   main {
@@ -512,7 +521,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       margin: 0 16px;
       padding: 12px 12px;
       font-size: 14px;
-      border-left: 3px solid var(--accent);
+    }
+    .section-title::before {
+      top: 8px;
+      bottom: 8px;
     }
     main { padding: 16px; }
     .card-info { padding: 12px; }
@@ -567,7 +579,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </header>
 
 <div class="category-wrapper">
-  <button class="burger-btn" id="burgerBtn"> Kategori</button>
+  <button class="burger-btn" id="burgerBtn">☰ Kategori</button>
   <div class="category-tabs" id="categoryTabs"></div>
 </div>
 
