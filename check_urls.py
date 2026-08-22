@@ -256,7 +256,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
-  /* Section Title - Garis biru ada jarak dari tepi, padding atas-bawah simetris */
+  /* Section Title - Garis biru nempel kiri, penuh dari atas ke bawah */
   .section-title {
     position: relative;
     margin: 12px 24px 0 24px;
@@ -269,9 +269,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .section-title::before {
     content: "";
     position: absolute;
-    left: 12px;
-    top: 12px;
-    bottom: 12px;
+    left: 0;
+    top: 0;
+    bottom: 0;
     width: 3px;
     background: var(--accent);
   }
@@ -523,9 +523,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       font-size: 14px;
     }
     .section-title::before {
-      left: 12px;
-      top: 12px;
-      bottom: 12px;
+      left: 0;
+      top: 0;
+      bottom: 0;
     }
     main { padding: 16px; }
     .card-info { padding: 12px; }
