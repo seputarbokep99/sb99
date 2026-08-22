@@ -256,7 +256,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
-  /* Section Title - Garis biru pake ::before biar padding tetap lurus */
+  /* Section Title - Garis biru sejajar dengan tab kategori */
   .section-title {
     position: relative;
     padding: 12px 24px;
@@ -269,7 +269,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .section-title::before {
     content: "";
     position: absolute;
-    left: 0;
+    left: 24px;
     top: 0;
     bottom: 0;
     width: 3px;
@@ -520,6 +520,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .section-title {
       padding: 12px 16px;
       font-size: 14px;
+    }
+    .section-title::before {
+      left: 16px;
     }
     main { padding: 16px; }
     .card-info { padding: 12px; }
