@@ -256,13 +256,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
-  /* Section Title - Judul Kategori Aktif */
   .section-title {
-    padding: 16px 24px;
-    font-size: 20px;
-    font-weight: 700;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
     color: var(--text);
-    border-left: 4px solid var(--accent);
+    border-left: 3px solid var(--accent);
     background: var(--card-bg);
     margin: 0;
   }
@@ -509,8 +508,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       align-items: stretch;
     }
     .section-title {
-      padding: 16px 16px;
-      font-size: 18px;
+      padding: 12px 16px;
+      font-size: 14px;
     }
     main { padding: 16px; }
     .card-info { padding: 12px; }
@@ -565,11 +564,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </header>
 
 <div class="category-wrapper">
-  <button class="burger-btn" id="burgerBtn">☰ Kategori</button>
+  <button class="burger-btn" id="burgerBtn"> Kategori</button>
   <div class="category-tabs" id="categoryTabs"></div>
 </div>
 
-<!-- Section Title: Judul Kategori Aktif -->
 <div class="section-title" id="sectionTitle">Terbaru</div>
 
 <main>
@@ -771,7 +769,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
 
   function render() {
-    // Update section title sesuai kategori aktif
     sectionTitle.textContent = currentCategory || LATEST_CATEGORY;
 
     var totalItems = filtered.length;
