@@ -256,7 +256,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
-  /* Section Title - Garis biru nempel kiri, penuh dari atas ke bawah */
   .section-title {
     position: relative;
     margin: 12px 24px 0 24px;
@@ -612,8 +611,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE = 30;
+  var ITEMS_PER_PAGE = 20;
   var LATEST_CATEGORY = "Terbaru";
+  var CATEGORY_LIMIT_DESKTOP = 30;  // PC/Laptop: max 30 video per kategori
+  var CATEGORY_LIMIT_MOBILE = 15;   // HP/Tablet: max 15 video per kategori
   var currentPage = 1;
   var currentCategory = null;
   var currentSearch = "";
@@ -637,6 +638,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  // Detect device berdasarkan lebar layar (sama dengan CSS breakpoint 768px)
+  function isMobileDevice() {
+    return window.innerWidth <= 768;
+  }
+
+  // Dapatkan limit video per kategori sesuai device
+  function getCategoryLimit() {
+    return isMobileDevice() ? CATEGORY_LIMIT_MOBILE : CATEGORY_LIMIT_DESKTOP;
   }
 
   function getParams() {
@@ -853,13 +864,34 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var q = searchBox.value.trim().toLowerCase();
     currentSearch = q;
     
-    filtered = ALL_DATA.filter(function (item) {
+    // Filter berdasarkan kategori dan search
+    var results = ALL_DATA.filter(function (item) {
       var matchCategory = (currentCategory === LATEST_CATEGORY) || item.kategori === currentCategory;
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1;
       return matchCategory && matchSearch;
     });
+    
+    // Batasi jumlah video per kategori (kecuali "Terbaru" yang tampilkan semua)
+    if (currentCategory !== LATEST_CATEGORY && !q) {
+      var limit = getCategoryLimit();
+      results = results.slice(0, limit);
+    }
+    
+    filtered = results;
     render();
   }
+
+  // Handle resize window - re-apply filter kalau device berubah
+  var resizeTimer;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      // Hanya re-apply kalau lagi di kategori tertentu (bukan search)
+      if (currentCategory !== LATEST_CATEGORY && !currentSearch) {
+        applyFilter();
+      }
+    }, 250);
+  });
 
   searchBtn.addEventListener("click", function () { currentPage = 1; applyFilter(); });
   searchBox.addEventListener("keydown", function (e) { if (e.key === "Enter") { currentPage = 1; applyFilter(); } });
