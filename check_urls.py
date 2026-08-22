@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 import re
 
 DATA_FILE = "videos.json"
-SITE_TITLE = "SeputarBokep99"
+SITE_TITLE = "SeputarBokep99 💦"
 
 
 def load_videos(path=DATA_FILE):
@@ -592,7 +592,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </main>
 
 <footer>
-  Copyright @ team 2026
+  Dibuat dengan ❤️ dan ☕
 </footer>
 
 <div class="video-modal" id="videoModal">
@@ -611,8 +611,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 (function () {
   var ALL_DATA = JSON.parse(document.getElementById("video-data").textContent);
-  var ITEMS_PER_PAGE_DESKTOP = 30;  // Desktop: 30 video per halaman
-  var ITEMS_PER_PAGE_MOBILE = 15;   // Mobile: 15 video per halaman
+  var ITEMS_PER_PAGE_DESKTOP = 30;
+  var ITEMS_PER_PAGE_MOBILE = 15;
+  var CATEGORY_LIMIT_DESKTOP = 30;
+  var CATEGORY_LIMIT_MOBILE = 15;
   var LATEST_CATEGORY = "Terbaru";
   var currentPage = 1;
   var currentCategory = null;
@@ -645,6 +647,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   function getItemsPerPage() {
     return isMobileDevice() ? ITEMS_PER_PAGE_MOBILE : ITEMS_PER_PAGE_DESKTOP;
+  }
+
+  function getCategoryLimit() {
+    return isMobileDevice() ? CATEGORY_LIMIT_MOBILE : CATEGORY_LIMIT_DESKTOP;
   }
 
   function getParams() {
@@ -862,12 +868,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var q = searchBox.value.trim().toLowerCase();
     currentSearch = q;
     
-    // Filter berdasarkan kategori dan search (TANPA LIMIT KATEGORI)
-    filtered = ALL_DATA.filter(function (item) {
+    // Filter berdasarkan kategori dan search
+    var results = ALL_DATA.filter(function (item) {
       var matchCategory = (currentCategory === LATEST_CATEGORY) || item.kategori === currentCategory;
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1;
       return matchCategory && matchSearch;
     });
+    
+    // Batasi jumlah video per kategori (kecuali "Terbaru" dan saat search)
+    if (currentCategory !== LATEST_CATEGORY && !q) {
+      var limit = getCategoryLimit();
+      results = results.slice(0, limit);
+    }
+    
+    filtered = results;
     render();
   }
 
@@ -876,6 +890,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   window.addEventListener("resize", function () {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
+      // Re-apply kalau lagi di kategori tertentu (bukan search)
       if (currentCategory !== LATEST_CATEGORY && !currentSearch) {
         applyFilter();
       }
