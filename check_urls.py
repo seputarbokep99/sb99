@@ -243,12 +243,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: #fff;
     border-color: var(--accent);
   }
-  .tab.latest-tab {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-  .tab.latest-tab:hover { opacity: 0.9; }
 
   .burger-btn {
     display: none;
@@ -569,7 +563,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </main>
 
 <footer>
-  Dibuat dengan ♥️ dan ☕
+  Dibuat dengan ❤️ dan ☕
 </footer>
 
 <div class="video-modal" id="videoModal">
@@ -742,10 +736,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       currentCategory = LATEST_CATEGORY;
     }
 
+    // FIX: Hapus class latest-tab, semua tab behave sama
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
-      var latestClass = cat === LATEST_CATEGORY ? " latest-tab" : "";
-      return '<span class="tab' + activeClass + latestClass + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span>';
+      return '<span class="tab' + activeClass + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span>';
     }).join("");
 
     categoryTabsEl.querySelectorAll(".tab").forEach(function (el) {
@@ -827,9 +821,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     var q = searchBox.value.trim().toLowerCase();
     currentSearch = q;
     
-    // HAPUS BATASAN 50 VIDEO, SEKARANG PAKAI SEMUA DATA (ALL_DATA)
     filtered = ALL_DATA.filter(function (item) {
-      // Kalau kategori "Terbaru", tampilkan semua (lewati filter kategori)
       var matchCategory = (currentCategory === LATEST_CATEGORY) || item.kategori === currentCategory;
       var matchSearch = !q || item.judul.toLowerCase().indexOf(q) > -1;
       return matchCategory && matchSearch;
