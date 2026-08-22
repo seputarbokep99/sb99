@@ -256,10 +256,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
-  /* Section Title - Garis biru ada jarak dari atas dan bawah */
+  /* Section Title - Ada jarak dari category-wrapper, garis biru ada ruang atas-bawah */
   .section-title {
     position: relative;
-    margin: 0 24px;
+    margin: 12px 24px 0 24px;
     padding: 12px 20px;
     font-size: 16px;
     font-weight: 600;
@@ -518,7 +518,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       align-items: stretch;
     }
     .section-title {
-      margin: 0 16px;
+      margin: 12px 16px 0 16px;
       padding: 12px 12px;
       font-size: 14px;
     }
@@ -579,7 +579,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </header>
 
 <div class="category-wrapper">
-  <button class="burger-btn" id="burgerBtn">☰ Kategori</button>
+  <button class="burger-btn" id="burgerBtn"> Kategori</button>
   <div class="category-tabs" id="categoryTabs"></div>
 </div>
 
