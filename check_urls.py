@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 import re
 
 DATA_FILE = "videos.json"
-SITE_TITLE = "SeputarBokep99 💦""
+SITE_TITLE = "SeputarBokep99 💦"
 
 
 def load_videos(path=DATA_FILE):
