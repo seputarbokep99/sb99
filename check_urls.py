@@ -256,24 +256,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .burger-btn:hover { background: var(--hover-bg); }
 
-  /* Section Title - Garis biru sejajar dengan tab kategori */
   .section-title {
-    position: relative;
-    padding: 12px 24px;
+    padding: 12px 20px;
     font-size: 16px;
     font-weight: 600;
     color: var(--text);
     background: var(--card-bg);
-    margin: 0;
-  }
-  .section-title::before {
-    content: "";
-    position: absolute;
-    left: 24px;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--accent);
+    margin: 0 24px;
+    border-left: 3px solid var(--accent);
   }
 
   main {
@@ -518,11 +508,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       align-items: stretch;
     }
     .section-title {
-      padding: 12px 16px;
+      padding: 12px 12px;
       font-size: 14px;
-    }
-    .section-title::before {
-      left: 16px;
+      margin: 0 16px;
+      border-left: 3px solid var(--accent);
     }
     main { padding: 16px; }
     .card-info { padding: 12px; }
