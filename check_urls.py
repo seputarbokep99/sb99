@@ -53,9 +53,7 @@ def load_videos(path=DATA_FILE):
             "slug": slug
         })
 
-    # REVERSE ORDER: Video terbaru (paling bawah di JSON) jadi paling atas
     videos.reverse()
-
     return videos
 
 
@@ -257,6 +255,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     white-space: nowrap;
   }
   .burger-btn:hover { background: var(--hover-bg); }
+
+  /* Section Title - Judul Kategori Aktif */
+  .section-title {
+    padding: 16px 24px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    border-left: 4px solid var(--accent);
+    background: var(--card-bg);
+    margin: 0;
+  }
 
   main {
     flex: 1;
@@ -499,6 +508,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       flex-direction: column;
       align-items: stretch;
     }
+    .section-title {
+      padding: 16px 16px;
+      font-size: 18px;
+    }
     main { padding: 16px; }
     .card-info { padding: 12px; }
     .video-title { font-size: 14px; }
@@ -556,6 +569,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <div class="category-tabs" id="categoryTabs"></div>
 </div>
 
+<!-- Section Title: Judul Kategori Aktif -->
+<div class="section-title" id="sectionTitle">Terbaru</div>
+
 <main>
   <div class="video-grid" id="videoGrid"></div>
   <div id="noResult" class="no-result" style="display:none;">Tidak ada video yang cocok.</div>
@@ -601,6 +617,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   var videoPlayer = document.getElementById("videoPlayer");
   var modalTitle = document.getElementById("modalTitle");
   var modalClose = document.getElementById("modalClose");
+  var sectionTitle = document.getElementById("sectionTitle");
 
   function escapeHtml(str) {
     var div = document.createElement("div");
@@ -736,7 +753,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       currentCategory = LATEST_CATEGORY;
     }
 
-    // FIX: Hapus class latest-tab, semua tab behave sama
     categoryTabsEl.innerHTML = categories.map(function (cat) {
       var activeClass = cat === currentCategory ? " active" : "";
       return '<span class="tab' + activeClass + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span>';
@@ -755,6 +771,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
 
   function render() {
+    // Update section title sesuai kategori aktif
+    sectionTitle.textContent = currentCategory || LATEST_CATEGORY;
+
     var totalItems = filtered.length;
     var totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
     
