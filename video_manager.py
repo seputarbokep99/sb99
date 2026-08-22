@@ -1,10 +1,12 @@
 import json
 import os
 import re
+import shutil
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 DATA_FILE = "videos.json"
+COVERS_DIR = "covers"
 
 
 def load_videos(path=DATA_FILE):
@@ -39,15 +41,22 @@ def get_unique_categories(videos):
     return categories
 
 
+def ensure_covers_dir():
+    if not os.path.exists(COVERS_DIR):
+        os.makedirs(COVERS_DIR)
+
+
 class VideoManagerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Video Manager - SeputarBokep99")
-        self.root.geometry("1100x700")
+        self.root.geometry("1200x700")
         self.root.minsize(900, 600)
         
         self.videos = load_videos()
         self.editing_index = None
+        
+        ensure_covers_dir()
         
         self.build_ui()
         self.refresh_category_dropdown()
@@ -59,79 +68,94 @@ class VideoManagerApp:
         main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # ===== LEFT PANEL: FORM =====
-        left_frame = ttk.Frame(main_container, width=400)
+        left_frame = ttk.Frame(main_container, width=450)
         main_container.add(left_frame, weight=1)
         
         ttk.Label(left_frame, text="FORM VIDEO", font=("Arial", 14, "bold")).pack(pady=(0, 15))
         
-        form_frame = ttk.Frame(left_frame)
-        form_frame.pack(fill=tk.X, padx=10)
+        # Scrollable form
+        canvas = tk.Canvas(left_frame, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(left_frame, orient="vertical", command=canvas.yview)
+        form_container = ttk.Frame(canvas)
+        
+        form_container.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=form_container, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
         
         # URL
-        ttk.Label(form_frame, text="URL *").grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form_container, text="URL *").grid(row=0, column=0, sticky=tk.W, pady=5)
         self.url_var = tk.StringVar()
-        self.url_entry = ttk.Entry(form_frame, textvariable=self.url_var, width=50)
+        self.url_entry = ttk.Entry(form_container, textvariable=self.url_var, width=50)
         self.url_entry.grid(row=0, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
         
         # Judul
-        ttk.Label(form_frame, text="Judul *").grid(row=1, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form_container, text="Judul *").grid(row=1, column=0, sticky=tk.W, pady=5)
         self.judul_var = tk.StringVar()
-        self.judul_entry = ttk.Entry(form_frame, textvariable=self.judul_var, width=50)
+        self.judul_entry = ttk.Entry(form_container, textvariable=self.judul_var, width=50)
         self.judul_entry.grid(row=1, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
         self.judul_entry.bind("<KeyRelease>", self.on_judul_change)
         
-        # Cover
-        ttk.Label(form_frame, text="Cover").grid(row=2, column=0, sticky=tk.W, pady=5)
+        # Cover dengan tombol Upload di kanan
+        ttk.Label(form_container, text="Cover").grid(row=2, column=0, sticky=tk.W, pady=5)
+        cover_frame = ttk.Frame(form_container)
+        cover_frame.grid(row=2, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
+        
         self.cover_var = tk.StringVar()
-        self.cover_entry = ttk.Entry(form_frame, textvariable=self.cover_var, width=50)
-        self.cover_entry.grid(row=2, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
+        self.cover_entry = ttk.Entry(cover_frame, textvariable=self.cover_var, width=40, state="readonly")
+        self.cover_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        btn_upload = ttk.Button(cover_frame, text=" Upload", command=self.upload_cover, width=10)
+        btn_upload.pack(side=tk.LEFT, padx=(5, 0))
         
         # Kategori
-        ttk.Label(form_frame, text="Kategori *").grid(row=3, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form_container, text="Kategori *").grid(row=3, column=0, sticky=tk.W, pady=5)
         self.kategori_var = tk.StringVar()
-        self.kategori_combo = ttk.Combobox(form_frame, textvariable=self.kategori_var, width=47)
+        self.kategori_combo = ttk.Combobox(form_container, textvariable=self.kategori_var, width=47)
         self.kategori_combo.grid(row=3, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
         
         # Rasio
-        ttk.Label(form_frame, text="Rasio").grid(row=4, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form_container, text="Rasio").grid(row=4, column=0, sticky=tk.W, pady=5)
         self.rasio_var = tk.StringVar(value="16:9")
-        self.rasio_combo = ttk.Combobox(form_frame, textvariable=self.rasio_var, 
+        self.rasio_combo = ttk.Combobox(form_container, textvariable=self.rasio_var, 
                                         values=["16:9", "3:2"], width=47, state="readonly")
         self.rasio_combo.grid(row=4, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
         
         # Durasi
-        ttk.Label(form_frame, text="Durasi").grid(row=5, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form_container, text="Durasi").grid(row=5, column=0, sticky=tk.W, pady=5)
         self.durasi_var = tk.StringVar()
-        self.durasi_entry = ttk.Entry(form_frame, textvariable=self.durasi_var, width=50)
+        self.durasi_entry = ttk.Entry(form_container, textvariable=self.durasi_var, width=50)
         self.durasi_entry.grid(row=5, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
         
-        # Slug (auto-generate, readonly)
-        ttk.Label(form_frame, text="Slug (auto)").grid(row=6, column=0, sticky=tk.W, pady=5)
+        # Slug
+        ttk.Label(form_container, text="Slug (auto)").grid(row=6, column=0, sticky=tk.W, pady=5)
         self.slug_var = tk.StringVar()
-        self.slug_entry = ttk.Entry(form_frame, textvariable=self.slug_var, width=50, state="readonly")
+        self.slug_entry = ttk.Entry(form_container, textvariable=self.slug_var, width=50, state="readonly")
         self.slug_entry.grid(row=6, column=1, sticky=tk.EW, pady=5, padx=(10, 0))
         
-        form_frame.columnconfigure(1, weight=1)
+        form_container.columnconfigure(1, weight=1)
         
-        # Tombol aksi
-        btn_frame = ttk.Frame(left_frame)
-        btn_frame.pack(fill=tk.X, padx=10, pady=15)
+        # Separator
+        ttk.Separator(form_container, orient="horizontal").grid(row=7, column=0, columnspan=2, sticky=tk.EW, pady=15)
         
-        self.btn_tambah = ttk.Button(btn_frame, text=" Tambah", command=self.tambah_video)
-        self.btn_tambah.pack(side=tk.LEFT, padx=5)
+        # Tombol aksi di bawah form
+        btn_frame = ttk.Frame(form_container)
+        btn_frame.grid(row=8, column=0, columnspan=2, sticky=tk.EW, pady=(0, 10))
+        
+        self.btn_tambah = ttk.Button(btn_frame, text="➕ Tambah", command=self.tambah_video)
+        self.btn_tambah.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
         
         self.btn_edit = ttk.Button(btn_frame, text="✏️ Update", command=self.update_video, state=tk.DISABLED)
-        self.btn_edit.pack(side=tk.LEFT, padx=5)
+        self.btn_edit.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
         
-        self.btn_hapus = ttk.Button(btn_frame, text="🗑️ Hapus", command=self.hapus_video, state=tk.DISABLED)
-        self.btn_hapus.pack(side=tk.LEFT, padx=5)
-        
-        self.btn_reset = ttk.Button(btn_frame, text="🔄 Reset Form", command=self.reset_form)
-        self.btn_reset.pack(side=tk.RIGHT, padx=5)
-        
-        # Info
-        self.info_var = tk.StringVar(value="Mode: TAMBAH VIDEO BARU")
-        ttk.Label(left_frame, textvariable=self.info_var, foreground="blue").pack(pady=5)
+        self.btn_hapus = ttk.Button(btn_frame, text="️ Hapus", command=self.hapus_video, state=tk.DISABLED)
+        self.btn_hapus.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
         
         # ===== RIGHT PANEL: LIST VIDEO =====
         right_frame = ttk.Frame(main_container)
@@ -147,7 +171,6 @@ class VideoManagerApp:
         self.search_entry.pack(side=tk.LEFT, padx=10)
         self.search_entry.bind("<KeyRelease>", lambda e: self.refresh_video_list())
         
-        # FIX: Simpan referensi label total
         self.total_label = ttk.Label(search_frame, text=f"Total: {len(self.videos)} video")
         self.total_label.pack(side=tk.RIGHT)
         
@@ -188,14 +211,46 @@ class VideoManagerApp:
         
         ttk.Button(bottom_btn_frame, text="✏️ Edit", command=self.edit_selected).pack(side=tk.LEFT, padx=5)
         ttk.Button(bottom_btn_frame, text="🗑️ Hapus", command=self.hapus_selected).pack(side=tk.LEFT, padx=5)
-        ttk.Button(bottom_btn_frame, text="💾 Reload Data", command=self.reload_data).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(bottom_btn_frame, text="💾 Reload", command=self.reload_data).pack(side=tk.RIGHT, padx=5)
+        
+    def upload_cover(self):
+        """Upload file gambar dari komputer"""
+        filetypes = [
+            ("Image files", "*.png *.jpg *.jpeg *.gif *.webp"),
+            ("All files", "*.*")
+        ]
+        
+        filepath = filedialog.askopenfilename(
+            title="Pilih gambar cover",
+            filetypes=filetypes
+        )
+        
+        if filepath:
+            try:
+                filename = os.path.basename(filepath)
+                name, ext = os.path.splitext(filename)
+                
+                dest_path = os.path.join(COVERS_DIR, filename)
+                counter = 1
+                while os.path.exists(dest_path):
+                    dest_path = os.path.join(COVERS_DIR, f"{name}_{counter}{ext}")
+                    counter += 1
+                
+                shutil.copy2(filepath, dest_path)
+                
+                relative_path = os.path.relpath(dest_path)
+                self.cover_var.set(relative_path)
+                
+                messagebox.showinfo("Sukses", f"Cover berhasil diupload ke:\n{relative_path}")
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Gagal upload cover: {e}")
         
     def refresh_category_dropdown(self):
         categories = get_unique_categories(self.videos)
         self.kategori_combo["values"] = categories
         
     def refresh_video_list(self):
-        # Clear tree
         for item in self.tree.get_children():
             self.tree.delete(item)
         
@@ -214,7 +269,6 @@ class VideoManagerApp:
             self.tree.insert("", tk.END, iid=idx, 
                            values=(judul, kategori, durasi, rasio))
         
-        # FIX: Update total count pakai referensi langsung
         total = len(self.tree.get_children())
         self.total_label.configure(text=f"Total: {total} video")
         
@@ -238,7 +292,6 @@ class VideoManagerApp:
         self.btn_tambah.configure(state=tk.DISABLED)
         self.btn_edit.configure(state=tk.NORMAL)
         self.btn_hapus.configure(state=tk.NORMAL)
-        self.info_var.set(f"Mode: EDIT (Index {idx})")
         
     def on_judul_change(self, event):
         judul = self.judul_var.get().strip()
@@ -345,7 +398,6 @@ class VideoManagerApp:
         if selection:
             idx = int(selection[0])
             self.tree.selection_set(idx)
-            # Trigger selection event
             self.on_tree_select(None)
         
     def reset_form(self):
@@ -361,7 +413,6 @@ class VideoManagerApp:
         self.btn_tambah.configure(state=tk.NORMAL)
         self.btn_edit.configure(state=tk.DISABLED)
         self.btn_hapus.configure(state=tk.DISABLED)
-        self.info_var.set("Mode: TAMBAH VIDEO BARU")
         
         self.tree.selection_remove(self.tree.selection())
         
@@ -376,7 +427,6 @@ class VideoManagerApp:
 if __name__ == "__main__":
     root = tk.Tk()
     
-    # Set theme
     style = ttk.Style()
     try:
         style.theme_use("clam")
